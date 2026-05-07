@@ -10,7 +10,7 @@
 
 ## デモ
 
-https://github.com/aurorance-1015/hisho-notes/raw/main/restaurant/screenshots/demo.mp4
+<video src="https://github.com/aurorance-1015/hisho-notes/raw/main/restaurant/screenshots/demo.mp4" controls width="100%"></video>
 
 ![秘書ノート 会食お店ピックアップのスクリーンショット](screenshots/demo.png)
 
