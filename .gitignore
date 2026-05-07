@@ -1,0 +1,23 @@
+# OS / エディタ生成物
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 依存・ビルド成果物(現状なし、将来に備えて)
+node_modules/
+dist/
+build/
+
+# 環境変数・秘密情報(誤コミット防止)
+.env
+.env.local
+*.key
+secrets.*
+
+# ログ・一時ファイル
+*.log
+tmp/

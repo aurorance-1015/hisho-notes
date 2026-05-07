@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 会食お店ピックアップ</title>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand { color: #888; font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid #c41e3a; padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .form { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+  .row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 150px; }
+  label { display: block; font-size: 0.85rem; margin-bottom: 0.3rem; color: #666; }
+  input, select, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; font-family: inherit; }
+  button { background: #c41e3a; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+  button:hover { background: #a31830; }
+  button:disabled { background: #ccc; cursor: not-allowed; }
+  .api-key { background: #fff8e1; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem; }
+  .api-key input { margin-top: 0.3rem; }
+  .api-key-row { display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; }
+  .api-key-row > div { flex: 1; min-width: 200px; }
+  .usage-meter { background: #eef5ff; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.85rem; color: #555; margin-bottom: 1rem; }
+  .usage-meter.warn { background: #fff4e1; color: #b76300; }
+  .usage-meter.danger { background: #ffe5e5; color: #b00020; }
+  .result { background: white; padding: 1rem 1.5rem; margin-bottom: 0.8rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .result h3 { margin: 0 0 0.3rem 0; font-size: 1.1rem; }
+  .rating { display: inline-block; background: #ff9800; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-weight: bold; font-size: 0.9rem; margin-right: 0.5rem; }
+  .badge { display: inline-block; background: #eee; color: #555; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.8rem; margin-right: 0.4rem; }
+  .meta { color: #666; font-size: 0.88rem; margin: 0.3rem 0; }
+  .links a, .links button { display: inline-block; margin-right: 0.6rem; margin-top: 0.3rem; padding: 0.3rem 0.8rem; text-decoration: none; font-size: 0.85rem; border-radius: 3px; border: none; cursor: pointer; font-family: inherit; color: white; }
+  .tabelog-link { background: #c41e3a; }
+  .cal-link { background: #0b8043; }
+  .chatwork-btn { background: #ff6a00; }
+  .chatwork-btn:hover { background: #e65c00; }
+  .remind-btn { background: #555; }
+  .remind-btn:hover { background: #333; }
+  .status { text-align: center; padding: 2rem; color: #999; }
+  .error { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; }
+  .note { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 0.7rem 1.2rem; border-radius: 4px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+  .toast.show { opacity: 1; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; }
+  footer a, footer .link-btn { color: #888; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font-size: inherit; font-family: inherit; }
+  footer a:hover, footer .link-btn:hover { color: #555; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 8px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem 2rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 1.2rem; margin-top: 0; color: #c41e3a; }
+  .modal h3 { font-size: 1rem; margin: 1rem 0 0.4rem; }
+  .modal p, .modal li { font-size: 0.9rem; line-height: 1.6; color: #444; }
+  .modal ol, .modal ul { padding-left: 1.4rem; }
+  .checklist { background: #fff8e1; padding: 0.8rem 1rem; border-radius: 4px; margin: 1rem 0; }
+  .checklist label { display: block; font-size: 0.95rem; color: #333; margin: 0.5rem 0; cursor: pointer; }
+  .checklist input { width: auto; margin-right: 0.5rem; vertical-align: middle; }
+  .modal-actions { margin-top: 1rem; text-align: right; }
+  .modal-actions button { margin-left: 0.5rem; }
+  .secondary-btn { background: #888; }
+  .secondary-btn:hover { background: #666; }
+
+  .remind-output { background: #f5f5f5; padding: 0.8rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; margin: 0.8rem 0; max-height: 200px; overflow-y: auto; }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>会食お店ピックアップ</h1>
+  <div class="subcopy">役員秘書・経営者・士業のための業務ツール集</div>
+
+  <div class="api-key">
+    <div class="api-key-row">
+      <div>
+        <label>Google Places API キー(初回のみ設定・ブラウザに保存されます)</label>
+        <input type="password" id="apiKey" placeholder="AIzaSy...">
+      </div>
+      <button type="button" id="setupBtn" class="secondary-btn" style="white-space:nowrap;">セットアップ手順</button>
+    </div>
+  </div>
+
+  <div class="usage-meter" id="usageMeter">本日のAPI使用回数: 0 / 50</div>
+
+  <div class="form">
+    <div class="row">
+      <div class="field">
+        <label>エリア・駅名(必須)</label>
+        <input type="text" id="area" placeholder="銀座、銀座駅、丸の内、六本木など">
+      </div>
+      <div class="field">
+        <label>徒歩</label>
+        <select id="walkMin">
+          <option value="">指定なし</option>
+          <option value="3">3分以内</option>
+          <option value="5">5分以内</option>
+          <option value="10">10分以内</option>
+          <option value="15">15分以内</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>時間帯</label>
+        <select id="mealTime">
+          <option value="">指定なし</option>
+          <option value="lunch">ランチ</option>
+          <option value="dinner">ディナー</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>ジャンル</label>
+        <select id="genre">
+          <option value="">指定なし</option>
+          <option value="寿司">寿司</option>
+          <option value="日本料理">日本料理</option>
+          <option value="割烹">割烹</option>
+          <option value="懐石">懐石</option>
+          <option value="天ぷら">天ぷら</option>
+          <option value="鰻">鰻</option>
+          <option value="焼肉">焼肉</option>
+          <option value="鉄板焼き">鉄板焼き</option>
+          <option value="すき焼き">すき焼き</option>
+          <option value="フレンチ">フレンチ</option>
+          <option value="イタリアン">イタリアン</option>
+          <option value="中華料理">中華</option>
+          <option value="ステーキ">ステーキ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>価格帯</label>
+        <select id="priceLevel">
+          <option value="">指定なし</option>
+          <option value="2">そこそこ(〜1万円)</option>
+          <option value="3">高級(1〜3万円)</option>
+          <option value="4">超高級(3万円〜)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>こだわり条件(任意)</label>
+        <input type="text" id="keywords" placeholder="個室、接待、落ち着いた など">
+      </div>
+      <div class="field">
+        <label>並び順</label>
+        <select id="sortBy">
+          <option value="rating">★評価が高い順</option>
+          <option value="reviews">レビュー件数が多い順</option>
+          <option value="distance">駅から近い順</option>
+        </select>
+      </div>
+    </div>
+    <button id="searchBtn">検索</button>
+    <div class="note">★4.0以上(食べログ★3.5相当)、レビュー30件以上のお店を評価順に表示します</div>
+  </div>
+
+  <div id="results"></div>
+  <div id="toast" class="toast"></div>
+
+  <!-- 初回セットアップ確認モーダル -->
+  <div class="modal-overlay" id="setupModal">
+    <div class="modal">
+      <h2>⚠️ 利用前の必須セットアップ</h2>
+      <p>Google Places APIは <strong>従量課金制</strong> です。意図しない高額請求を防ぐため、利用開始前に <strong>2点の安全設定</strong> を必ずお願いします。</p>
+
+      <h3>1. Quota(リクエスト上限)の設定</h3>
+      <ol>
+        <li><a href="https://console.cloud.google.com/apis/api/places.googleapis.com/quotas" target="_blank" rel="noopener">Google Cloud Console → APIs & Services → Places API → Quotas</a> を開く</li>
+        <li>「Requests per day」を編集 → <strong>50</strong> に設定して保存</li>
+        <li>これで上限超過時はAPIが停止し、課金は発生しません</li>
+      </ol>
+
+      <h3>2. APIキーのHTTPリファラー制限</h3>
+      <ol>
+        <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">APIs & Services → 認証情報</a> → 該当のキーを編集</li>
+        <li>アプリケーションの制限 → 「HTTPリファラー(ウェブサイト)」を選択</li>
+        <li>このページを開いているURL(例: <code>https://yourname.netlify.app/*</code>、ローカル時は <code>file:///*</code>)を追加</li>
+      </ol>
+
+      <div class="checklist">
+        <label><input type="checkbox" id="confirm1"> Quotaを50/日に設定しました</label>
+        <label><input type="checkbox" id="confirm2"> APIキーにHTTPリファラー制限を設定しました</label>
+        <label><input type="checkbox" id="confirm3"> 上記未設定での利用は自己責任であることに同意します</label>
+      </div>
+
+      <p style="font-size:0.8rem;color:#888;">※ 同意後はこの確認は再表示されません(localStorageで記録)</p>
+
+      <div class="modal-actions">
+        <button type="button" id="setupConfirmBtn" disabled>設定完了 / 同意して使う</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- リマインド文生成モーダル -->
+  <div class="modal-overlay" id="remindModal">
+    <div class="modal">
+      <h2>会食前日リマインド文を生成</h2>
+      <p style="font-size:0.85rem;color:#666;">日時を入力すると、Chatwork/Slack/メール用の整形済みテキストを生成します。</p>
+
+      <div class="row">
+        <div class="field">
+          <label>日付</label>
+          <input type="date" id="remindDate">
+        </div>
+        <div class="field">
+          <label>時刻</label>
+          <input type="time" id="remindTime">
+        </div>
+      </div>
+      <div class="field">
+        <label>宛先(任意・冒頭の呼びかけに使用)</label>
+        <input type="text" id="remindRecipient" placeholder="例: ●●様、○○課長">
+      </div>
+      <div class="field">
+        <label>備考(任意・末尾に追加)</label>
+        <textarea id="remindNote" rows="2" placeholder="例: 個室を予約済みです。当日連絡先は090-XXXX-XXXX。"></textarea>
+      </div>
+
+      <div class="remind-output" id="remindOutput">日時を入力するとここに生成されます</div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" id="remindCloseBtn">閉じる</button>
+        <button type="button" id="remindCopyBtn">コピーする</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 免責事項モーダル -->
+  <div class="modal-overlay" id="disclaimerModal">
+    <div class="modal">
+      <h2>免責事項</h2>
+      <p>本ツールは <strong>無償で提供されるサンプル実装</strong> です。「秘書ノート」シリーズの一環として公開しています。</p>
+      <ul>
+        <li>本ツールの利用にあたり、Google Cloud Console上のQuota設定およびAPIキーのHTTPリファラー制限設定は、<strong>利用者の責任において必ず実施</strong>してください。</li>
+        <li>上記設定を行わずに利用した場合に発生する課金、APIキーの漏洩、その他一切の損害について、<strong>作者は責任を負いません</strong>。</li>
+        <li>本ツールはGoogle社およびその他の第三者と無関係であり、第三者サービスの仕様変更により動作しなくなる可能性があります。</li>
+        <li>食べログ等の検索リンクは、URL文字列を組み立てているのみで、各サービスのAPIは利用していません。</li>
+        <li>商用利用を含めMITライセンスに準拠しますが、上記免責は同等に適用されます。</li>
+      </ul>
+      <div class="modal-actions">
+        <button type="button" id="disclaimerCloseBtn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <button type="button" class="link-btn" id="openSetup">セットアップ手順</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">業務効率化ツールのカスタマイズ・運用代行のご相談 → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const WALK_SPEED_M_PER_MIN = 80;
+    const DAILY_QUOTA_HINT = 50; // README/モーダルと整合
+    const SEARCH_COOLDOWN_MS = 1500; // 連打防止
+
+    const apiKeyInput = document.getElementById('apiKey');
+    apiKeyInput.value = localStorage.getItem('placesApiKey') || '';
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('placesApiKey', apiKeyInput.value);
+    });
+
+    // ----- 初回セットアップモーダル -----
+    const setupModal = document.getElementById('setupModal');
+    const setupConfirmBtn = document.getElementById('setupConfirmBtn');
+    const confirms = ['confirm1','confirm2','confirm3'].map(id => document.getElementById(id));
+    function refreshSetupConfirmBtn() {
+      setupConfirmBtn.disabled = !confirms.every(c => c.checked);
+    }
+    confirms.forEach(c => c.addEventListener('change', refreshSetupConfirmBtn));
+    setupConfirmBtn.addEventListener('click', () => {
+      localStorage.setItem('hishoSetupConfirmed', '1');
+      setupModal.classList.remove('show');
+    });
+    if (!localStorage.getItem('hishoSetupConfirmed')) {
+      setupModal.classList.add('show');
+    }
+    document.getElementById('setupBtn').addEventListener('click', () => {
+      confirms.forEach(c => c.checked = false);
+      refreshSetupConfirmBtn();
+      setupModal.classList.add('show');
+    });
+    document.getElementById('openSetup').addEventListener('click', () => {
+      confirms.forEach(c => c.checked = false);
+      refreshSetupConfirmBtn();
+      setupModal.classList.add('show');
+    });
+
+    // ----- 免責モーダル -----
+    const disclaimerModal = document.getElementById('disclaimerModal');
+    document.getElementById('openDisclaimer').addEventListener('click', () => disclaimerModal.classList.add('show'));
+    document.getElementById('disclaimerCloseBtn').addEventListener('click', () => disclaimerModal.classList.remove('show'));
+
+    // ----- API使用回数カウンター -----
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function getUsage() {
+      try {
+        const raw = JSON.parse(localStorage.getItem('hishoApiUsage') || '{}');
+        if (raw.date === todayKey()) return raw.count || 0;
+      } catch (e) {}
+      return 0;
+    }
+    function bumpUsage(n) {
+      const count = getUsage() + n;
+      localStorage.setItem('hishoApiUsage', JSON.stringify({ date: todayKey(), count }));
+      renderUsage();
+      return count;
+    }
+    function renderUsage() {
+      const m = document.getElementById('usageMeter');
+      const c = getUsage();
+      m.textContent = `本日のAPI使用回数: ${c} / ${DAILY_QUOTA_HINT}`;
+      m.classList.toggle('warn', c >= DAILY_QUOTA_HINT * 0.6 && c < DAILY_QUOTA_HINT * 0.9);
+      m.classList.toggle('danger', c >= DAILY_QUOTA_HINT * 0.9);
+    }
+    renderUsage();
+
+    // ----- 検索 -----
+    const searchBtn = document.getElementById('searchBtn');
+    let lastSearchAt = 0;
+    searchBtn.addEventListener('click', search);
+    document.getElementById('area').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+
+    document.getElementById('results').addEventListener('click', async e => {
+      const cw = e.target.closest('.chatwork-btn');
+      if (cw) {
+        try {
+          await navigator.clipboard.writeText(cw.dataset.msg);
+          showToast('コピーしました。Chatworkに貼り付けてください');
+        } catch (err) {
+          showToast('コピーに失敗しました');
+        }
+        return;
+      }
+      const rb = e.target.closest('.remind-btn');
+      if (rb) {
+        openRemindModal(rb.dataset);
+      }
+    });
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    async function geocode(query, apiKey) {
+      const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'places.location,places.displayName',
+        },
+        body: JSON.stringify({
+          textQuery: query,
+          languageCode: 'ja',
+          regionCode: 'JP',
+          maxResultCount: 1,
+        }),
+      });
+      bumpUsage(1);
+      if (!resp.ok) throw new Error(`位置検索エラー: ${resp.status}`);
+      const data = await resp.json();
+      const place = data.places?.[0];
+      return place ? { location: place.location, name: place.displayName?.text } : null;
+    }
+
+    function haversineM(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    async function search() {
+      // 連打防止
+      const now = Date.now();
+      if (now - lastSearchAt < SEARCH_COOLDOWN_MS) {
+        showToast('連続検索を抑止しています(1〜2秒お待ちください)');
+        return;
+      }
+      lastSearchAt = now;
+
+      const apiKey = apiKeyInput.value.trim();
+      const area = document.getElementById('area').value.trim();
+      const walkMin = document.getElementById('walkMin').value;
+      const mealTime = document.getElementById('mealTime').value;
+      const genre = document.getElementById('genre').value;
+      const priceLevel = document.getElementById('priceLevel').value;
+      const keywords = document.getElementById('keywords').value.trim();
+      const sortBy = document.getElementById('sortBy').value;
+      const results = document.getElementById('results');
+
+      if (!apiKey) {
+        results.innerHTML = '<div class="error">Google Places APIキーを入力してください</div>';
+        return;
+      }
+      if (!area) {
+        results.innerHTML = '<div class="error">エリアまたは駅名を入力してください</div>';
+        return;
+      }
+
+      // 当日上限ソフトチェック
+      if (getUsage() >= DAILY_QUOTA_HINT) {
+        if (!confirm(`本日のAPI使用回数が ${DAILY_QUOTA_HINT} に達しています。Google CloudのQuota設定で停止しているはずですが、続行しますか?`)) {
+          return;
+        }
+      }
+
+      localStorage.setItem('placesApiKey', apiKey);
+      searchBtn.disabled = true;
+
+      const mealKeyword = mealTime === 'lunch' ? 'ランチ' : mealTime === 'dinner' ? 'ディナー' : '';
+      const queryParts = [area, genre, mealKeyword, keywords, 'レストラン'].filter(Boolean);
+      const query = queryParts.join(' ');
+
+      results.innerHTML = '<div class="status">検索中...</div>';
+
+      try {
+        let anchorLocation = null;
+        let anchorName = '';
+        if (walkMin) {
+          const stationQuery = /駅$/.test(area) ? area : area + '駅';
+          const geo = await geocode(stationQuery, apiKey);
+          if (!geo) {
+            results.innerHTML = `<div class="error">「${esc(stationQuery)}」の場所が見つかりませんでした。エリア名を変えてみてください。</div>`;
+            return;
+          }
+          anchorLocation = geo.location;
+          anchorName = geo.name || stationQuery;
+        }
+
+        const body = {
+          textQuery: query,
+          languageCode: 'ja',
+          regionCode: 'JP',
+          maxResultCount: 20,
+        };
+        if (anchorLocation && walkMin) {
+          body.locationBias = {
+            circle: {
+              center: { latitude: anchorLocation.latitude, longitude: anchorLocation.longitude },
+              radius: Number(walkMin) * WALK_SPEED_M_PER_MIN,
+            },
+          };
+        }
+        if (priceLevel) {
+          const levels = {
+            '2': ['PRICE_LEVEL_MODERATE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'],
+            '3': ['PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'],
+            '4': ['PRICE_LEVEL_VERY_EXPENSIVE'],
+          };
+          body.priceLevels = levels[priceLevel];
+        }
+
+        const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'places.displayName,places.rating,places.userRatingCount,places.priceLevel,places.formattedAddress,places.googleMapsUri,places.location,places.regularOpeningHours,places.websiteUri,places.nationalPhoneNumber',
+          },
+          body: JSON.stringify(body),
+        });
+        bumpUsage(1);
+
+        if (!resp.ok) {
+          const errText = await resp.text();
+          if (resp.status === 429 || /quota/i.test(errText)) {
+            throw new Error(`Quota上限に達しました(${resp.status})。Google CloudのQuota設定をご確認ください。`);
+          }
+          throw new Error(`APIエラー (${resp.status}): ${errText}`);
+        }
+
+        const data = await resp.json();
+        let places = (data.places || [])
+          .filter(p => (p.rating || 0) >= 4.0 && (p.userRatingCount || 0) >= 30);
+
+        if (anchorLocation) {
+          places.forEach(p => {
+            if (p.location) {
+              p._distanceM = haversineM(
+                anchorLocation.latitude, anchorLocation.longitude,
+                p.location.latitude, p.location.longitude
+              );
+              p._walkMin = Math.max(1, Math.round(p._distanceM / WALK_SPEED_M_PER_MIN));
+            }
+          });
+          if (walkMin) {
+            const maxM = Number(walkMin) * WALK_SPEED_M_PER_MIN;
+            places = places.filter(p => p._distanceM != null && p._distanceM <= maxM);
+          }
+        }
+
+        if (sortBy === 'reviews') {
+          places.sort((a, b) => (b.userRatingCount || 0) - (a.userRatingCount || 0));
+        } else if (sortBy === 'distance' && anchorLocation) {
+          places.sort((a, b) => (a._distanceM ?? Infinity) - (b._distanceM ?? Infinity));
+        } else {
+          places.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        }
+
+        if (places.length === 0) {
+          results.innerHTML = '<div class="status">条件に合うお店が見つかりませんでした。条件を緩めてみてください。</div>';
+          return;
+        }
+
+        const priceSymbols = {
+          PRICE_LEVEL_INEXPENSIVE: '¥',
+          PRICE_LEVEL_MODERATE: '¥¥',
+          PRICE_LEVEL_EXPENSIVE: '¥¥¥',
+          PRICE_LEVEL_VERY_EXPENSIVE: '¥¥¥¥',
+        };
+
+        const headerInfo = anchorName
+          ? `<div class="meta">基準: ${esc(anchorName)} から ${walkMin}分圏内 / ${places.length}件</div>`
+          : `<div class="meta">${places.length}件</div>`;
+
+        results.innerHTML = headerInfo + places.map(p => {
+          const name = p.displayName?.text || '';
+          const rating = p.rating ? p.rating.toFixed(1) : '-';
+          const reviews = p.userRatingCount || 0;
+          const address = p.formattedAddress || '';
+          const phone = p.nationalPhoneNumber || '';
+          const tabelogQueryParts = [name, area, mealKeyword, keywords].filter(Boolean);
+          const tabelogUrl = `https://tabelog.com/rstLst/?sw=${encodeURIComponent(tabelogQueryParts.join(' '))}`;
+          const price = priceSymbols[p.priceLevel] || '';
+          const walkBadge = p._walkMin ? `<span class="badge">${esc(anchorName)}から徒歩約${p._walkMin}分</span>` : '';
+          const priceBadge = price ? `<span class="badge">${price}</span>` : '';
+          const phoneLine = phone ? `<div class="meta">TEL: ${esc(phone)}</div>` : '';
+
+          const calTitle = `${name}(会食)`;
+          const calDetailsLines = [
+            `評価: ★${rating} (${reviews}件)`,
+            price ? `価格帯: ${price}` : '',
+            phone ? `電話: ${phone}` : '',
+            `食べログ: ${tabelogUrl}`,
+            p.googleMapsUri ? `Google Maps: ${p.googleMapsUri}` : '',
+            p.websiteUri ? `公式サイト: ${p.websiteUri}` : '',
+          ].filter(Boolean).join('\n');
+          const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&location=${encodeURIComponent(address)}&details=${encodeURIComponent(calDetailsLines)}`;
+
+          const chatworkMsg = [
+            `【会食候補】${name}`,
+            `★${rating} (${reviews}件)${price ? ' / ' + price : ''}${p._walkMin ? ' / ' + anchorName + 'から徒歩約' + p._walkMin + '分' : ''}`,
+            address,
+            phone ? `TEL: ${phone}` : '',
+            `食べログ: ${tabelogUrl}`,
+          ].filter(Boolean).join('\n');
+
+          // リマインドボタン用のデータ(data-属性に格納)
+          const remindData = {
+            name, address, phone,
+            rating, reviews,
+            price,
+            tabelog: tabelogUrl,
+            walkMin: p._walkMin || '',
+            anchorName: anchorName || '',
+          };
+
+          return `
+            <div class="result">
+              <h3>${esc(name)}</h3>
+              <div>
+                <span class="rating">★ ${rating}</span>
+                <span class="meta">${reviews}件のレビュー</span>
+              </div>
+              <div class="meta">${priceBadge}${walkBadge}</div>
+              <div class="meta">${esc(address)}</div>
+              ${phoneLine}
+              <div class="links">
+                <a class="tabelog-link" href="${tabelogUrl}" target="_blank" rel="noopener">食べログで検索</a>
+                <a class="cal-link" href="${calUrl}" target="_blank" rel="noopener">カレンダー登録</a>
+                <button type="button" class="chatwork-btn" data-msg="${esc(chatworkMsg)}">Chatworkへ共有(コピー)</button>
+                <button type="button" class="remind-btn"
+                  data-name="${esc(name)}"
+                  data-address="${esc(address)}"
+                  data-phone="${esc(phone)}"
+                  data-tabelog="${esc(tabelogUrl)}"
+                  data-walkmin="${esc(p._walkMin || '')}"
+                  data-anchor="${esc(anchorName || '')}"
+                >前日リマインド文を生成</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        results.innerHTML = `<div class="error">エラー: ${esc(e.message)}</div>`;
+      } finally {
+        searchBtn.disabled = false;
+      }
+    }
+
+    // ----- リマインドモーダル -----
+    const remindModal = document.getElementById('remindModal');
+    const remindOutput = document.getElementById('remindOutput');
+    const remindFields = ['remindDate','remindTime','remindRecipient','remindNote'].map(id => document.getElementById(id));
+    let currentRemindData = null;
+
+    function openRemindModal(dataset) {
+      currentRemindData = {
+        name: dataset.name || '',
+        address: dataset.address || '',
+        phone: dataset.phone || '',
+        tabelog: dataset.tabelog || '',
+        walkMin: dataset.walkmin || '',
+        anchorName: dataset.anchor || '',
+      };
+      remindFields.forEach(f => { if (f.id !== 'remindDate' && f.id !== 'remindTime') f.value = ''; });
+      // 日付のデフォルト=明日
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('remindDate').value = tomorrow.toISOString().slice(0,10);
+      document.getElementById('remindTime').value = '18:00';
+      renderRemind();
+      remindModal.classList.add('show');
+    }
+    document.getElementById('remindCloseBtn').addEventListener('click', () => remindModal.classList.remove('show'));
+    document.getElementById('remindCopyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(remindOutput.textContent);
+        showToast('コピーしました');
+      } catch (e) {
+        showToast('コピーに失敗しました');
+      }
+    });
+    remindFields.forEach(f => f.addEventListener('input', renderRemind));
+
+    function renderRemind() {
+      if (!currentRemindData) return;
+      const date = document.getElementById('remindDate').value;
+      const time = document.getElementById('remindTime').value;
+      const recipient = document.getElementById('remindRecipient').value.trim();
+      const note = document.getElementById('remindNote').value.trim();
+      const d = currentRemindData;
+
+      let dateStr = '';
+      if (date) {
+        const [y,m,dd] = date.split('-');
+        const wd = ['日','月','火','水','木','金','土'][new Date(date).getDay()];
+        dateStr = `${y}年${parseInt(m,10)}月${parseInt(dd,10)}日(${wd})`;
+      }
+      const timeStr = time || '';
+      const dt = [dateStr, timeStr].filter(Boolean).join(' ');
+
+      const lines = [];
+      if (recipient) lines.push(`${recipient}`, '');
+      lines.push('明日の会食のご案内です。');
+      lines.push('');
+      if (dt) lines.push(`日時: ${dt}〜`);
+      lines.push(`店舗: ${d.name}`);
+      if (d.address) lines.push(`住所: ${d.address}`);
+      if (d.phone) lines.push(`TEL: ${d.phone}`);
+      if (d.walkMin && d.anchorName) lines.push(`アクセス: ${d.anchorName}から徒歩約${d.walkMin}分`);
+      if (d.tabelog) lines.push(`食べログ: ${d.tabelog}`);
+      if (note) {
+        lines.push('');
+        lines.push(note);
+      }
+      lines.push('');
+      lines.push('よろしくお願いいたします。');
+
+      remindOutput.textContent = lines.join('\n');
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
