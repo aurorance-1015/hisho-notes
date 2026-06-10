@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 訪問先カルテ</title>
+<style>
+  :root { --crimson: #c41e3a; --navy: #1f2d3d; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand { color: #888; font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .form { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+  .row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 200px; }
+  label { display: block; font-size: 0.85rem; margin-bottom: 0.3rem; color: #666; }
+  input, textarea { width: 100%; padding: 0.55rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; font-family: inherit; }
+  button { background: var(--crimson); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 4px; font-size: 1rem; cursor: pointer; font-family: inherit; }
+  button:hover { background: #a31830; }
+  .btn-sub { background: #777; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-sub:hover { background: #555; }
+  .people-list .person-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+  .people-list .person-row input { flex: 1; }
+  .remove-person { background: #ccc; color: #333; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  .remove-person:hover { background: #bbb; }
+  .note { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+  .helper-banner { background: #fffbea; border-left: 3px solid var(--crimson); padding: 0.5rem 0.8rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; }
+
+  .section { background: white; padding: 1.2rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.2rem; }
+  .section h2 { font-size: 1.1rem; color: var(--navy); margin: 0 0 0.5rem; border-left: 4px solid var(--crimson); padding-left: 0.6rem; display: flex; align-items: center; justify-content: space-between; }
+  .check-counter { font-size: 0.85rem; color: #666; font-weight: normal; border: none; padding: 0; }
+  .check-counter.complete { color: #0b8043; font-weight: bold; }
+  .links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem; }
+  .card-slot { position: relative; }
+  .link-check { position: absolute; top: 8px; right: 8px; z-index: 2; cursor: pointer; width: 17px; height: 17px; accent-color: var(--crimson); }
+  .link-card { display: block; padding: 0.7rem 2rem 0.7rem 0.9rem; border: 1px solid #e3e3e3; border-radius: 6px; text-decoration: none; color: #333; transition: all 0.15s; background: #fff; }
+  .link-card:hover { border-color: var(--crimson); box-shadow: 0 2px 6px rgba(196,30,58,0.12); transform: translateY(-1px); }
+  .link-card .lc-title { font-weight: bold; font-size: 0.95rem; color: var(--crimson); }
+  .link-card .lc-desc { font-size: 0.78rem; color: #777; margin-top: 0.2rem; }
+  .card-slot.checked .link-card { opacity: 0.5; background: #f5f5f5; }
+  .card-slot.checked .link-card .lc-title { text-decoration: line-through; text-decoration-color: #888; }
+  .person-block { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px dashed #ddd; }
+  .person-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .person-name { font-weight: bold; color: var(--navy); margin-bottom: 0.5rem; }
+  .caveat { font-size: 0.75rem; color: #b76300; }
+
+  /* Briefing sheet */
+  .sheet { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.2rem; }
+  .sheet h2 { font-size: 1.1rem; color: var(--navy); margin: 0 0 1rem; }
+  .sheet-block { margin-bottom: 1.1rem; }
+  .sheet-block h3 { font-size: 0.9rem; color: var(--crimson); margin: 0 0 0.4rem; border-bottom: 1px solid #eee; padding-bottom: 0.2rem; }
+  .sheet-highlight { background: #fffbea; padding: 0.6rem 0.8rem; border-radius: 4px; border-left: 3px solid var(--crimson); margin-bottom: 0.6rem; }
+  .sheet-highlight .sheet-label { color: var(--crimson); font-weight: 600; }
+  .sheet-highlight-note { font-size: 0.75rem; color: #b76300; margin-bottom: 0.3rem; font-weight: 600; }
+  .sheet-field { display: flex; margin-bottom: 0.4rem; font-size: 0.9rem; align-items: center; }
+  .sheet-label { width: 150px; color: #666; flex-shrink: 0; }
+  .sheet-input { flex: 1; border: none; border-bottom: 1px dotted #bbb; font-size: 0.9rem; padding: 0.15rem 0.3rem; font-family: inherit; background: transparent; border-radius: 0; }
+  .sheet-input:focus { outline: none; border-bottom: 1px solid var(--crimson); background: #fffbea; }
+  .sheet-memo-input { width: 100%; border: 1px dotted #bbb; min-height: 4.5rem; border-radius: 4px; padding: 0.5rem; font-family: inherit; font-size: 0.9rem; resize: vertical; }
+  .sheet-memo-input:focus { outline: none; border-color: var(--crimson); background: #fffbea; }
+  .sheet-person { padding: 0.5rem 0; border-bottom: 1px dotted #eee; }
+  .sheet-person:last-child { border-bottom: none; }
+  .toolbar { display: flex; gap: 0.6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .save-status { font-size: 0.85rem; color: #0b8043; align-self: center; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 0.7rem 1.2rem; border-radius: 4px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+  .toast.show { opacity: 1; }
+
+  /* History */
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .hi-name { cursor: pointer; color: var(--crimson); text-decoration: underline; }
+  .history-item .hi-date { color: #999; font-size: 0.8rem; }
+  .history-del { background: none; color: #bbb; border: none; cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.4rem; }
+  .history-del:hover { color: #c41e3a; }
+
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; }
+  footer a, footer .link-btn { color: #888; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font-size: inherit; font-family: inherit; }
+
+  .hidden { display: none; }
+
+  /* Print: ブリーフィングシートだけ印刷 */
+  @media print {
+    body { margin: 0; max-width: none; background: white; }
+    .brand, h1, .subcopy, .form, #companyLinks, #peopleLinks, .toolbar, #historySection, footer, .no-print, .toast { display: none !important; }
+    .sheet { border: none; box-shadow: none; padding: 0; }
+    .sheet-input, .sheet-memo-input { border-color: #999; background: white !important; }
+    .sheet-highlight { background: #f5f5f5 !important; border-left-color: #555 !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>訪問先カルテ</h1>
+  <div class="subcopy">役員秘書・経営者・士業・営業担当のための業務ツール集</div>
+
+  <div class="helper-banner">
+    💡 商談前・訪問前の下調べを 1画面に。<strong>名刺の会社名をそのまま入力でOK</strong>(法人番号は不要)
+  </div>
+
+  <div class="form">
+    <div class="row">
+      <div class="field">
+        <label>会社名(必須)</label>
+        <input type="text" id="company" placeholder="例:株式会社○○商事">
+      </div>
+      <div class="field">
+        <label>所在地・エリア(任意 / 地図精度向上)</label>
+        <input type="text" id="area" placeholder="例:東京都港区、大阪市">
+      </div>
+    </div>
+
+    <label>面談相手の氏名(任意・複数可)</label>
+    <div class="people-list" id="peopleList">
+      <div class="person-row">
+        <input type="text" class="person-input" placeholder="例:山田 太郎">
+        <button type="button" class="remove-person" onclick="removePerson(this)">×</button>
+      </div>
+    </div>
+    <button type="button" class="btn-sub" id="addPersonBtn" style="margin-bottom:1rem;">＋ 面談相手を追加</button>
+
+    <div>
+      <button type="button" id="generateBtn">カルテを生成</button>
+    </div>
+    <div class="note">外部サービスへの検索リンクを生成します。APIは使用せず、ブラウザだけで完結します(課金・情報送信なし)。入力・調査メモはこのブラウザ内(localStorage)にのみ保存されます。</div>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="toolbar">
+      <button type="button" id="saveSheetBtn">💾 カルテを保存</button>
+      <button type="button" class="btn-sub" id="copySheetBtn">📋 シート内容をコピー</button>
+      <button type="button" class="btn-sub" onclick="window.print()">🖨 シートを印刷</button>
+      <button type="button" class="btn-sub" id="openAllCompany">会社リンクを一括で開く</button>
+      <span class="save-status" id="saveStatus"></span>
+    </div>
+
+    <div class="section" id="companyLinks">
+      <h2>会社情報 <span class="check-counter" id="companyCounter">0 / 7 確認済み</span></h2>
+      <div class="note" style="margin-top:0;margin-bottom:0.6rem;">順番にクリックして調査 → ✓で確認済みマーク(履歴に保存されます)</div>
+      <div class="links-grid" id="companyGrid"></div>
+    </div>
+
+    <div class="section hidden" id="peopleLinks">
+      <h2>面談相手の情報 <span class="check-counter" id="peopleCounter"></span></h2>
+      <div id="peopleGrid"></div>
+    </div>
+
+    <div class="sheet" id="briefingSheet">
+      <h2>📋 訪問前ブリーフィングシート(直接入力できます)</h2>
+      <div class="sheet-block">
+        <h3>会社概要</h3>
+        <div class="sheet-highlight-note">★ まずここを押さえる(規模・代表者・事業内容)</div>
+        <div class="sheet-highlight">
+          <div class="sheet-field"><span class="sheet-label">代表者・役職</span><input class="sheet-input" data-key="rep"></div>
+          <div class="sheet-field"><span class="sheet-label">設立 / 資本金 / 従業員</span><input class="sheet-input" data-key="scale"></div>
+          <div class="sheet-field"><span class="sheet-label">事業内容</span><input class="sheet-input" data-key="business"></div>
+        </div>
+        <div class="sheet-field"><span class="sheet-label">正式名称</span><input class="sheet-input" data-key="name"></div>
+        <div class="sheet-field"><span class="sheet-label">法人番号</span><input class="sheet-input" data-key="houjin"></div>
+        <div class="sheet-field"><span class="sheet-label">所在地</span><input class="sheet-input" data-key="address"></div>
+        <div class="sheet-field"><span class="sheet-label">直近のニュース</span><input class="sheet-input" data-key="news"></div>
+      </div>
+      <div class="sheet-block">
+        <h3>面談相手</h3>
+        <div id="sheetPeople"></div>
+      </div>
+      <div class="sheet-block">
+        <h3>商談メモ</h3>
+        <div class="sheet-field"><span class="sheet-label">訪問日時</span><input class="sheet-input" data-key="visit"></div>
+        <div class="sheet-field"><span class="sheet-label">目的・論点</span><input class="sheet-input" data-key="purpose"></div>
+        <div style="font-size:0.85rem;color:#666;margin:0.5rem 0 0.3rem;">事前メモ / 当日メモ</div>
+        <textarea class="sheet-memo-input" data-key="memo"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="historySection">
+    <h2>調べた会社の履歴</h2>
+    <div id="historyList"><div class="note">まだ履歴はありません。</div></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">業務効率化ツールのカスタマイズ・運用代行のご相談 → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const enc = s => encodeURIComponent(s);
+
+    // ----- 面談相手 動的追加 -----
+    $('addPersonBtn').addEventListener('click', () => addPersonRow(''));
+    function addPersonRow(val) {
+      const row = document.createElement('div');
+      row.className = 'person-row';
+      row.innerHTML = `<input type="text" class="person-input" value="${esc(val)}" placeholder="例:鈴木 花子"><button type="button" class="remove-person" onclick="removePerson(this)">×</button>`;
+      $('peopleList').appendChild(row);
+    }
+    window.removePerson = function(btn) {
+      const rows = document.querySelectorAll('#peopleList .person-row');
+      if (rows.length <= 1) { btn.closest('.person-row').querySelector('input').value = ''; return; }
+      btn.closest('.person-row').remove();
+    };
+
+    // ----- カルテ生成 -----
+    $('generateBtn').addEventListener('click', () => generate(null));
+    $('company').addEventListener('keydown', e => { if (e.key === 'Enter') generate(null); });
+
+    function companyLinks(company, area) {
+      const cq = enc(company);
+      const mapsQ = enc(company + (area ? ' ' + area : ''));
+      return [
+        { title: 'gBizINFO(企業基本情報)', desc: '代表者・資本金・事業概要・従業員数', url: `https://www.google.com/search?q=${cq}+site:info.gbiz.go.jp` },
+        { title: '公式サイトを検索', desc: 'Google検索(会社名 公式サイト)', url: `https://www.google.com/search?q=${cq}+${enc('公式サイト')}` },
+        { title: 'Google Maps', desc: '所在地・ルート・所要時間', url: `https://www.google.com/maps/search/?api=1&query=${mapsQ}` },
+        { title: '最新ニュース', desc: 'Googleニュース(会社の動向)', url: `https://news.google.com/search?q=${cq}&hl=ja&gl=JP` },
+        { title: '評判・口コミを検索', desc: 'Google検索(会社名 評判)', url: `https://www.google.com/search?q=${cq}+${enc('評判 口コミ')}` },
+        { title: '採用・求人情報', desc: '事業の方向性・勢いが分かる', url: `https://www.google.com/search?q=${cq}+${enc('採用 求人')}` },
+        { title: '登記情報提供サービス', desc: '登記情報(公式・有料)', url: `https://www1.touki.or.jp/` },
+      ];
+    }
+
+    function personLinks(name, company) {
+      const nq = enc(name);
+      const ncq = enc(name + ' ' + company);
+      return [
+        { title: 'Google検索', desc: '氏名+会社名', url: `https://www.google.com/search?q=${ncq}` },
+        { title: 'LinkedIn', desc: '職歴・現職', url: `https://www.linkedin.com/search/results/people/?keywords=${nq}` },
+        { title: 'Facebook', desc: '人物特定', url: `https://www.facebook.com/search/people/?q=${nq}` },
+        { title: 'X(Twitter)', desc: '※同名アカウントに注意', url: `https://x.com/search?q=${nq}&f=user`, caveat: true },
+        { title: 'Wantedly', desc: 'ビジネスプロフィール', url: `https://www.wantedly.com/search?q=${nq}` },
+        { title: 'ニュース・登壇', desc: '発言・インタビュー', url: `https://news.google.com/search?q=${ncq}&hl=ja&gl=JP` },
+      ];
+    }
+
+    function linkCard(l, checkId, checked) {
+      const caveat = l.caveat ? ` <span class="caveat">⚠</span>` : '';
+      return `<div class="card-slot${checked ? ' checked' : ''}" data-slot-id="${checkId}">
+        <input type="checkbox" class="link-check" data-check-id="${checkId}" ${checked ? 'checked' : ''} aria-label="確認済みにする">
+        <a class="link-card" href="${l.url}" target="_blank" rel="noopener">
+          <div class="lc-title">${esc(l.title)}${caveat}</div>
+          <div class="lc-desc">${esc(l.desc)}</div>
+        </a>
+      </div>`;
+    }
+
+    let lastCompanyUrls = [];
+    let currentCompany = '';
+
+    function generate(record) {
+      const company = $('company').value.trim();
+      const area = $('area').value.trim();
+      if (!company) { alert('会社名を入力してください'); return; }
+      currentCompany = company;
+
+      const people = [...document.querySelectorAll('.person-input')]
+        .map(i => i.value.trim()).filter(Boolean);
+
+      const savedChecks = (record && record.checks) || {};
+
+      // 会社情報リンク
+      const cLinks = companyLinks(company, area);
+      lastCompanyUrls = cLinks.map(l => l.url);
+      $('companyGrid').innerHTML = cLinks.map((l, i) => {
+        const id = `c${i}`;
+        return linkCard(l, id, !!savedChecks[id]);
+      }).join('');
+
+      // 人物情報リンク
+      if (people.length) {
+        $('peopleLinks').classList.remove('hidden');
+        $('peopleGrid').innerHTML = people.map((name, pi) => `
+          <div class="person-block">
+            <div class="person-name">${esc(name)}</div>
+            <div class="links-grid">${personLinks(name, company).map((l, li) => {
+              const id = `p${pi}-${li}`;
+              return linkCard(l, id, !!savedChecks[id]);
+            }).join('')}</div>
+          </div>
+        `).join('');
+      } else {
+        $('peopleLinks').classList.add('hidden');
+        $('peopleGrid').innerHTML = '';
+      }
+
+      // シート 面談相手フィールド生成
+      const sheetPeopleNames = people.length ? people : [''];
+      $('sheetPeople').innerHTML = sheetPeopleNames.map((name, i) => `
+        <div class="sheet-person">
+          <div class="sheet-field"><span class="sheet-label">氏名・役職</span><input class="sheet-input" data-pkey="${i}-name"></div>
+          <div class="sheet-field"><span class="sheet-label">事前情報</span><input class="sheet-input" data-pkey="${i}-info"></div>
+        </div>
+      `).join('');
+
+      // シート初期値
+      const saved = record ? record.sheet : null;
+      if (saved) {
+        document.querySelectorAll('#briefingSheet [data-key]').forEach(el => {
+          el.value = saved[el.dataset.key] || '';
+        });
+        (saved.people || []).forEach((p, i) => {
+          const n = document.querySelector(`[data-pkey="${i}-name"]`);
+          const inf = document.querySelector(`[data-pkey="${i}-info"]`);
+          if (n) n.value = p.name || '';
+          if (inf) inf.value = p.info || '';
+        });
+      } else {
+        document.querySelectorAll('#briefingSheet [data-key]').forEach(el => el.value = '');
+        setVal('name', company);
+        setVal('address', area);
+        sheetPeopleNames.forEach((name, i) => {
+          const n = document.querySelector(`[data-pkey="${i}-name"]`);
+          if (n) n.value = name;
+        });
+      }
+
+      updateCheckCounter();
+      $('results').classList.remove('hidden');
+      $('saveStatus').textContent = '';
+      $('results').scrollIntoView({ behavior: 'smooth' });
+
+      if (!record) saveSheet(true);
+    }
+    function setVal(key, v) {
+      const el = document.querySelector(`#briefingSheet [data-key="${key}"]`);
+      if (el) el.value = v;
+    }
+
+    // ----- チェックリスト -----
+    document.addEventListener('change', e => {
+      if (!e.target.classList.contains('link-check')) return;
+      const id = e.target.dataset.checkId;
+      const checked = e.target.checked;
+      e.target.closest('.card-slot').classList.toggle('checked', checked);
+      // 履歴のレコードを更新
+      let h = getHistory();
+      const idx = h.findIndex(item => item.company === currentCompany);
+      if (idx >= 0) {
+        if (!h[idx].checks) h[idx].checks = {};
+        if (checked) h[idx].checks[id] = true;
+        else delete h[idx].checks[id];
+        localStorage.setItem(HKEY, JSON.stringify(h));
+      }
+      updateCheckCounter();
+    });
+
+    function updateCheckCounter() {
+      const cTotal = document.querySelectorAll('#companyGrid .link-check').length;
+      const cChk = document.querySelectorAll('#companyGrid .link-check:checked').length;
+      const cEl = $('companyCounter');
+      cEl.textContent = `${cChk} / ${cTotal} 確認済み`;
+      cEl.classList.toggle('complete', cTotal > 0 && cChk === cTotal);
+
+      const pTotal = document.querySelectorAll('#peopleGrid .link-check').length;
+      const pChk = document.querySelectorAll('#peopleGrid .link-check:checked').length;
+      const pEl = $('peopleCounter');
+      if (pTotal > 0) {
+        pEl.textContent = `${pChk} / ${pTotal} 確認済み`;
+        pEl.classList.toggle('complete', pChk === pTotal);
+      } else {
+        pEl.textContent = '';
+      }
+    }
+
+    // ----- 会社リンク一括で開く -----
+    $('openAllCompany').addEventListener('click', () => {
+      if (!lastCompanyUrls.length) return;
+      if (!confirm(`会社情報リンク ${lastCompanyUrls.length}件を新しいタブで開きます。\n※ブラウザのポップアップ許可が必要です。`)) return;
+      let blocked = 0;
+      lastCompanyUrls.forEach(u => {
+        const w = window.open(u, '_blank');
+        if (!w || w.closed || typeof w.closed === 'undefined') blocked++;
+      });
+      if (blocked > 0) {
+        alert('一部のタブがポップアップブロックされました。\n\nアドレスバー右側の「ポップアップがブロックされました」アイコンをクリック →「許可」に設定 → もう一度このボタンを押してください。');
+      }
+    });
+
+    // ----- カルテ保存 -----
+    $('saveSheetBtn').addEventListener('click', () => saveSheet(false));
+
+    function collectSheet() {
+      const sheet = {};
+      document.querySelectorAll('#briefingSheet [data-key]').forEach(el => {
+        sheet[el.dataset.key] = el.value;
+      });
+      const ppl = [];
+      document.querySelectorAll('#sheetPeople .sheet-person').forEach((blk, i) => {
+        const n = blk.querySelector(`[data-pkey="${i}-name"]`);
+        const inf = blk.querySelector(`[data-pkey="${i}-info"]`);
+        ppl.push({ name: n ? n.value : '', info: inf ? inf.value : '' });
+      });
+      sheet.people = ppl;
+      return sheet;
+    }
+
+    function collectChecks() {
+      const checks = {};
+      document.querySelectorAll('.link-check:checked').forEach(el => {
+        checks[el.dataset.checkId] = true;
+      });
+      return checks;
+    }
+
+    function saveSheet(silent) {
+      if (!currentCompany) return;
+      const company = $('company').value.trim();
+      const area = $('area').value.trim();
+      const peopleNames = [...document.querySelectorAll('.person-input')].map(i => i.value.trim()).filter(Boolean);
+      const sheet = collectSheet();
+      const checks = collectChecks();
+
+      let h = getHistory();
+      h = h.filter(item => item.company !== company);
+      h.unshift({ company, area, people: peopleNames, sheet, checks, date: new Date().toISOString() });
+      h = h.slice(0, 50);
+      localStorage.setItem(HKEY, JSON.stringify(h));
+      renderHistory();
+      if (!silent) {
+        $('saveStatus').textContent = '✓ 保存しました';
+        setTimeout(() => { $('saveStatus').textContent = ''; }, 2500);
+      }
+    }
+
+    // ----- シート内容コピー -----
+    $('copySheetBtn').addEventListener('click', async () => {
+      const company = $('company').value.trim();
+      if (!company) return;
+      const sheet = collectSheet();
+      const lines = [];
+      lines.push(`【${company} 訪問前カルテ】`);
+      lines.push('');
+      lines.push('─ 会社概要 ─');
+      if (sheet.rep) lines.push(`代表者・役職: ${sheet.rep}`);
+      if (sheet.scale) lines.push(`設立/資本金/従業員: ${sheet.scale}`);
+      if (sheet.business) lines.push(`事業内容: ${sheet.business}`);
+      if (sheet.name) lines.push(`正式名称: ${sheet.name}`);
+      if (sheet.houjin) lines.push(`法人番号: ${sheet.houjin}`);
+      if (sheet.address) lines.push(`所在地: ${sheet.address}`);
+      if (sheet.news) lines.push(`直近ニュース: ${sheet.news}`);
+
+      const ppl = (sheet.people || []).filter(p => p.name || p.info);
+      if (ppl.length) {
+        lines.push('');
+        lines.push('─ 面談相手 ─');
+        ppl.forEach(p => {
+          if (p.name) lines.push(`■ ${p.name}`);
+          if (p.info) lines.push(`  ${p.info}`);
+        });
+      }
+
+      if (sheet.visit || sheet.purpose || sheet.memo) {
+        lines.push('');
+        lines.push('─ 商談メモ ─');
+        if (sheet.visit) lines.push(`訪問日時: ${sheet.visit}`);
+        if (sheet.purpose) lines.push(`目的・論点: ${sheet.purpose}`);
+        if (sheet.memo) {
+          lines.push('メモ:');
+          lines.push(sheet.memo);
+        }
+      }
+
+      const text = lines.join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('シート内容をコピーしました。チャットやメールに貼り付けできます');
+      } catch (err) {
+        showToast('コピーに失敗しました');
+      }
+    });
+
+    function showToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // ----- 履歴(localStorage) -----
+    const HKEY = 'hishoVisitHistory';
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; }
+    }
+    function renderHistory() {
+      const h = getHistory();
+      const list = $('historyList');
+      if (!h.length) { list.innerHTML = '<div class="note">まだ履歴はありません。</div>'; return; }
+      list.innerHTML = h.map((item, i) => {
+        const d = new Date(item.date);
+        const ds = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+        const checkInfo = item.checks ? ` <span class="hi-date">(✓ ${Object.keys(item.checks).length})</span>` : '';
+        return `<div class="history-item">
+          <span class="hi-name" data-idx="${i}">${esc(item.company)}</span>
+          <span><span class="hi-date">${ds}</span>${checkInfo} <button class="history-del" data-del="${i}">削除</button></span>
+        </div>`;
+      }).join('');
+    }
+    $('historyList').addEventListener('click', e => {
+      const nameEl = e.target.closest('.hi-name');
+      if (nameEl) {
+        const item = getHistory()[Number(nameEl.dataset.idx)];
+        if (!item) return;
+        $('company').value = item.company;
+        $('area').value = item.area || '';
+        rebuildPeople(item.people || []);
+        generate(item);
+        return;
+      }
+      const delEl = e.target.closest('.history-del');
+      if (delEl) {
+        let h = getHistory();
+        h.splice(Number(delEl.dataset.del), 1);
+        localStorage.setItem(HKEY, JSON.stringify(h));
+        renderHistory();
+      }
+    });
+    function rebuildPeople(people) {
+      const list = $('peopleList');
+      list.innerHTML = '';
+      const arr = people.length ? people : [''];
+      arr.forEach(name => addPersonRow(name));
+    }
+    renderHistory();
+
+    // ----- 免責 -----
+    $('openDisclaimer').addEventListener('click', () => {
+      alert('本ツールは無償で提供されるサンプル実装です。外部サービスへの検索リンクを生成するのみで、APIや個人情報の外部送信は行いません。入力内容・調査メモ・履歴・確認チェックはお使いのブラウザ(localStorage)にのみ保存されます。リンク先サービスの内容・仕様については各サービスの規約に従ってください。本ツール利用に起因する一切の損害について作者は責任を負いません。MITライセンス。');
+    });
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
