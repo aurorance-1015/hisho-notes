@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート 番外編 / スポ少 配車割ジェネレータ</title>
+<style>
+  :root { --crimson: #e07b35; --crimson-dark: #b85d1f; --navy: #1f2d3d; --soft-cream: #fff4ea; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 720px; margin: 1.5rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand-row { display: flex; align-items: baseline; gap: 0.5rem; color: #888; font-size: 0.85rem; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+  .badge { background: #555; color: white; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; letter-spacing: 0; }
+  h1 { font-size: 1.5rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .helper { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.8rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; line-height: 1.5; }
+
+  .form { background: white; padding: 1.2rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+  .form-block { margin-bottom: 1rem; }
+  label { display: block; font-size: 0.85rem; margin-bottom: 0.3rem; color: #666; font-weight: 600; }
+  input[type=date], input[type=time], input[type=text], input[type=number], textarea { width: 100%; padding: 0.55rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; font-family: inherit; }
+  textarea { min-height: 100px; resize: vertical; }
+  .row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 130px; }
+
+  .driver-list { margin-top: 0.3rem; }
+  .driver-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .driver-row input[type=text] { flex: 2; }
+  .driver-row input[type=number] { flex: 1; max-width: 90px; }
+  .remove-driver { background: #ddd; color: #666; border: none; border-radius: 4px; cursor: pointer; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  .remove-driver:hover { background: #ccc; }
+  .add-driver { background: #888; color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 0.3rem; font-family: inherit; }
+  .add-driver:hover { background: #666; }
+
+  .generate-btn { display: block; width: 100%; background: var(--crimson); color: white; border: none; padding: 1rem; border-radius: 6px; font-size: 1.15rem; font-weight: bold; cursor: pointer; font-family: inherit; margin-top: 0.5rem; box-shadow: 0 2px 6px rgba(224,123,53,0.28); transition: all 0.15s; }
+  .generate-btn:hover { background: var(--crimson-dark); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(224,123,53,0.35); }
+  .generate-btn:active { transform: translateY(0); }
+
+  .output-section { background: white; padding: 1.2rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1rem; opacity: 0; transform: translateY(8px); transition: all 0.35s ease; }
+  .output-section.show { opacity: 1; transform: translateY(0); }
+  .output-section h2 { font-size: 1rem; color: var(--navy); margin: 0 0 0.6rem; border-left: 4px solid var(--crimson); padding-left: 0.5rem; }
+  .output-text { width: 100%; min-height: 180px; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; font-family: "Hiragino Sans", "Meiryo", monospace; font-size: 0.95rem; line-height: 1.6; background: #fafafa; resize: vertical; }
+  .output-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .copy-btn { background: #0b8043; color: white; border: none; padding: 0.55rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 600; font-family: inherit; }
+  .copy-btn:hover { background: #096432; }
+  .copy-status { color: #0b8043; font-size: 0.85rem; }
+  .warning { background: #fff4e1; color: #b76300; padding: 0.5rem 0.7rem; border-radius: 4px; font-size: 0.85rem; margin-top: 0.4rem; }
+
+  .note { font-size: 0.78rem; color: #888; margin-top: 0.4rem; line-height: 1.5; }
+
+  footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; line-height: 1.6; }
+  footer a, footer button { color: #888; text-decoration: underline; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+  footer a:hover, footer button:hover { color: #555; }
+  .extra-mark { display: inline-block; background: #555; color: white; padding: 0.05rem 0.3rem; border-radius: 2px; font-size: 0.7rem; margin-right: 0.3rem; }
+
+  @media (max-width: 600px) {
+    body { margin: 1rem auto; }
+    h1 { font-size: 1.3rem; }
+    .row { gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="brand-row">秘書ノート Hisho Notes <span class="badge">番外編</span></div>
+  <h1>スポ少 配車割ジェネレータ</h1>
+  <div class="subcopy">入力した参加メンバーを、車のキャパシティに合わせて自動で割り振り → LINEに貼り付け可能なテキストを生成します。</div>
+
+  <div class="helper">
+    🏀 娘のミニバスで気づいた仕事を、ツールにしてみました。<br>
+    売り物ではなく <strong>「作ってみた」</strong> 系です。問い合わせサポートは行っていません(Issueは歓迎)。
+  </div>
+
+  <div class="form">
+    <div class="form-block">
+      <div class="row">
+        <div>
+          <label>集合日付</label>
+          <input type="date" id="meetDate">
+        </div>
+        <div>
+          <label>集合時刻</label>
+          <input type="time" id="meetTime" value="08:00">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-block">
+      <label>集合場所・目的地</label>
+      <input type="text" id="meetPlace" placeholder="例:○○体育館、△△グラウンド">
+    </div>
+
+    <div class="form-block">
+      <label>参加する子(1行に1人ずつ)</label>
+      <textarea id="kidsList" placeholder="田中太郎&#10;佐藤花子&#10;鈴木一郎&#10;..."></textarea>
+      <div class="note">姓が車のドライバー姓と一致する子は、その家の車に優先で乗ります。</div>
+    </div>
+
+    <div class="form-block">
+      <label>車を出せる家(ドライバー名・最大乗車数)</label>
+      <div class="driver-list" id="driverList">
+        <div class="driver-row">
+          <input type="text" class="driver-name" placeholder="例:田中">
+          <input type="number" class="driver-cap" min="1" max="10" value="4" aria-label="席数">
+          <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
+        </div>
+        <div class="driver-row">
+          <input type="text" class="driver-name" placeholder="例:山田">
+          <input type="number" class="driver-cap" min="1" max="10" value="3" aria-label="席数">
+          <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
+        </div>
+      </div>
+      <button type="button" class="add-driver" id="addDriverBtn">＋ 車を追加</button>
+      <div class="note">乗車数は子どもの数(ドライバー自身は含めない)。例:4席=子4人まで。</div>
+    </div>
+
+    <button type="button" class="generate-btn" id="generateBtn">🚗 配車を生成</button>
+  </div>
+
+  <div class="output-section" id="outputSection">
+    <h2>📋 LINEに貼り付け用テキスト</h2>
+    <textarea class="output-text" id="outputText" readonly></textarea>
+    <div class="output-actions">
+      <button type="button" class="copy-btn" id="copyBtn">コピーする</button>
+      <span class="copy-status" id="copyStatus"></span>
+    </div>
+    <div class="warning" id="warningArea" style="display:none;"></div>
+    <div class="note">生成結果はこのブラウザ内のみ。サーバには一切送信していません。次回はそのまま再生成できるように、入力内容は localStorage に保存されます。</div>
+  </div>
+
+  <footer>
+    <span class="extra-mark">番外編</span>秘書ノート Hisho Notes ―
+    <button type="button" id="openAbout">これ何?</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">本編の業務ツール(訪問先カルテ・会食店ピックアップ)は GitHubの hisho-notes リポジトリで公開中</div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+
+    // ----- ドライバー行 動的追加/削除 -----
+    $('addDriverBtn').addEventListener('click', () => addDriverRow('', 4));
+    function addDriverRow(name, cap) {
+      const row = document.createElement('div');
+      row.className = 'driver-row';
+      row.innerHTML = `
+        <input type="text" class="driver-name" placeholder="例:佐藤" value="${esc(name)}">
+        <input type="number" class="driver-cap" min="1" max="10" value="${cap || 4}" aria-label="席数">
+        <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
+      `;
+      $('driverList').appendChild(row);
+    }
+    window.removeDriver = function(btn) {
+      const rows = document.querySelectorAll('.driver-row');
+      if (rows.length <= 1) {
+        // 最後の1行は消さずに中身だけクリア
+        const r = btn.closest('.driver-row');
+        r.querySelector('.driver-name').value = '';
+        r.querySelector('.driver-cap').value = 4;
+        return;
+      }
+      btn.closest('.driver-row').remove();
+    };
+
+    // ----- localStorage 復元 -----
+    const SKEY = 'hishoSpoToolLast';
+    function restore() {
+      try {
+        const data = JSON.parse(localStorage.getItem(SKEY) || '{}');
+        if (data.place) $('meetPlace').value = data.place;
+        if (data.kids) $('kidsList').value = data.kids;
+        if (data.time) $('meetTime').value = data.time;
+        if (Array.isArray(data.drivers) && data.drivers.length) {
+          $('driverList').innerHTML = '';
+          data.drivers.forEach(d => addDriverRow(d.name || '', d.cap || 4));
+        }
+      } catch (e) {}
+    }
+    restore();
+    // 日付のデフォルト=明日
+    if (!$('meetDate').value) {
+      const tmr = new Date();
+      tmr.setDate(tmr.getDate() + 1);
+      const y = tmr.getFullYear();
+      const m = String(tmr.getMonth() + 1).padStart(2, '0');
+      const d = String(tmr.getDate()).padStart(2, '0');
+      $('meetDate').value = `${y}-${m}-${d}`;
+    }
+
+    function saveCurrent() {
+      const drivers = [...document.querySelectorAll('.driver-row')].map(r => ({
+        name: r.querySelector('.driver-name').value.trim(),
+        cap: parseInt(r.querySelector('.driver-cap').value, 10) || 1,
+      }));
+      const data = {
+        place: $('meetPlace').value.trim(),
+        kids: $('kidsList').value,
+        time: $('meetTime').value,
+        drivers,
+      };
+      localStorage.setItem(SKEY, JSON.stringify(data));
+    }
+
+    // ----- 配車割ロジック -----
+    function generate() {
+      const date = $('meetDate').value;
+      const time = $('meetTime').value;
+      const place = $('meetPlace').value.trim();
+
+      const kidsRaw = $('kidsList').value;
+      const kids = kidsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+
+      const drivers = [...document.querySelectorAll('.driver-row')]
+        .map(r => ({
+          name: r.querySelector('.driver-name').value.trim().replace(/車$|さん$/, ''),
+          cap: parseInt(r.querySelector('.driver-cap').value, 10) || 0,
+          kids: [],
+        }))
+        .filter(d => d.name && d.cap > 0);
+
+      if (!kids.length) { alert('参加する子を入力してください'); return; }
+      if (!drivers.length) { alert('車を出せる家を1台以上入力してください'); return; }
+
+      // 1) ドライバー姓と子の姓が一致する場合は優先割り当て
+      const assigned = new Set();
+      for (const d of drivers) {
+        if (!d.name) continue;
+        for (const k of kids) {
+          if (assigned.has(k)) continue;
+          if (k.startsWith(d.name)) {
+            if (d.kids.length < d.cap) {
+              d.kids.push(k);
+              assigned.add(k);
+            }
+            break;
+          }
+        }
+      }
+
+      // 2) 残りの子を順番に空席ある車へ
+      const uncovered = [];
+      for (const k of kids) {
+        if (assigned.has(k)) continue;
+        let placed = false;
+        for (const d of drivers) {
+          if (d.kids.length < d.cap) {
+            d.kids.push(k);
+            assigned.add(k);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) uncovered.push(k);
+      }
+
+      const totalCap = drivers.reduce((s, d) => s + d.cap, 0);
+
+      // テキスト整形
+      const lines = [];
+      const dateStr = date ? formatDateJP(date) : '';
+      const timeStr = time || '';
+      lines.push(`【配車のお知らせ】`);
+      if (dateStr) lines.push(`${dateStr} ${timeStr} 集合`);
+      else if (timeStr) lines.push(`${timeStr} 集合`);
+      if (place) lines.push(`場所:${place}`);
+      lines.push('');
+      drivers.forEach(d => {
+        if (!d.kids.length) {
+          lines.push(`🚗 ${d.name}車(${d.cap}席):—`);
+        } else {
+          lines.push(`🚗 ${d.name}車(${d.cap}席):${d.kids.join('・')}`);
+        }
+      });
+      lines.push('');
+      lines.push('※ 乗り合わせ場所の希望は前日までにLINEへ');
+
+      $('outputText').value = lines.join('\n');
+      $('outputSection').classList.add('show');
+
+      // 警告(子が車に乗り切れない場合)
+      if (uncovered.length) {
+        const w = $('warningArea');
+        w.style.display = '';
+        w.textContent = `⚠ ${uncovered.length}人分の席が足りません(${uncovered.join('・')})。車を追加するか、人数調整してください。`;
+      } else {
+        $('warningArea').style.display = 'none';
+      }
+
+      saveCurrent();
+      $('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function formatDateJP(yyyymmdd) {
+      const [y, m, d] = yyyymmdd.split('-');
+      const date = new Date(Number(y), Number(m) - 1, Number(d));
+      const wd = ['日','月','火','水','木','金','土'][date.getDay()];
+      return `${Number(m)}月${Number(d)}日(${wd})`;
+    }
+
+    $('generateBtn').addEventListener('click', generate);
+
+    // ----- コピー -----
+    $('copyBtn').addEventListener('click', async () => {
+      const text = $('outputText').value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        $('copyStatus').textContent = '✓ コピーしました。LINEに貼り付けてください';
+        setTimeout(() => { $('copyStatus').textContent = ''; }, 3000);
+      } catch (e) {
+        // フォールバック:textareaを選択してコピー
+        $('outputText').select();
+        document.execCommand('copy');
+        $('copyStatus').textContent = '✓ コピーしました(手動方式)';
+        setTimeout(() => { $('copyStatus').textContent = ''; }, 3000);
+      }
+    });
+
+    // ----- これ何?(免責&趣旨) -----
+    $('openAbout').addEventListener('click', () => {
+      alert(
+        '【秘書ノート 番外編 / スポ少 配車割ジェネレータ】\n\n' +
+        '娘のミニバス活動で「代表って時間ある人がやるけど、本当は時間ない人ほどツールが必要」と気づいて作りました。売り物ではなく作ってみたシリーズです。\n\n' +
+        '・入力した情報は外部に送信されません(localStorage完結)\n' +
+        '・APIキー不要・登録不要・課金なし\n' +
+        '・問い合わせ対応は行っていません(Issue報告は歓迎)\n' +
+        '・本ツール利用に起因する一切の損害について作者は責任を負いません\n\n' +
+        'MITライセンス / 秘書ノート シリーズの一部です'
+      );
+    });
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
