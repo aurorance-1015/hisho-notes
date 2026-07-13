@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 会議パック</title>
+<style>
+  :root { --crimson: #c41e3a; --crimson-dark: #a31830; --navy: #1f2d3d; --soft-cream: #fffbea; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand { color: #888; font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .helper-banner { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.5rem 0.8rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; }
+
+  .form { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+  .form-block { margin-bottom: 1rem; }
+  .row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 180px; }
+  label { display: block; font-size: 0.85rem; margin-bottom: 0.3rem; color: #666; }
+  input, textarea, select { width: 100%; padding: 0.55rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; font-family: inherit; }
+  textarea { resize: vertical; min-height: 70px; }
+  button { background: var(--crimson); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 4px; font-size: 1rem; cursor: pointer; font-family: inherit; }
+  button:hover { background: var(--crimson-dark); }
+  .btn-sub { background: #777; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-sub:hover { background: #555; }
+  .btn-outline { background: transparent; color: var(--crimson); border: 1px solid var(--crimson); padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+  .btn-outline:hover { background: var(--crimson); color: white; }
+
+  .template-bar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; font-size: 0.85rem; color: #666; }
+  .template-bar select { flex: 1; min-width: 200px; padding: 0.4rem; font-size: 0.9rem; }
+
+  .attendee-list .attendee-row { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; align-items: center; }
+  .attendee-list .attendee-row input { flex: 1; }
+  .remove-attendee { background: #ccc; color: #333; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  .remove-attendee:hover { background: #bbb; }
+
+  .generate-btn { display: block; width: 100%; padding: 1rem; font-size: 1.15rem; font-weight: bold; margin-top: 0.5rem; box-shadow: 0 2px 6px rgba(196,30,58,0.25); transition: all 0.15s; }
+  .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(196,30,58,0.3); }
+
+  .section { background: white; padding: 1.2rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.2rem; }
+  .section h2 { font-size: 1.05rem; color: var(--navy); margin: 0 0 0.6rem; border-left: 4px solid var(--crimson); padding-left: 0.6rem; }
+  .actions { display: flex; gap: 0.6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .action-cal { background: #1a73e8; }
+  .action-cal:hover { background: #1158bd; }
+  .action-ics { background: #0b8043; }
+  .action-ics:hover { background: #096432; }
+
+  .output-text { width: 100%; min-height: 130px; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; font-family: "Hiragino Sans", "Meiryo", monospace; font-size: 0.9rem; line-height: 1.6; background: #fafafa; resize: vertical; }
+  .output-toolbar { display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center; }
+  .copy-btn { background: var(--crimson); color: white; padding: 0.45rem 1rem; font-size: 0.85rem; }
+  .copy-status { color: #0b8043; font-size: 0.85rem; }
+
+  .variant-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+  .variant-tabs button { background: #eee; color: #555; padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 4px; }
+  .variant-tabs button.active { background: var(--crimson); color: white; }
+  .variant-tabs button:hover:not(.active) { background: #ddd; }
+  .variant-desc { font-size: 0.78rem; color: #888; margin-bottom: 0.4rem; }
+
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .hi-name { cursor: pointer; color: var(--crimson); text-decoration: underline; }
+  .history-item .hi-meta { color: #999; font-size: 0.8rem; }
+  .history-del { background: none; color: #bbb; border: none; cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.4rem; }
+  .history-del:hover { color: var(--crimson); }
+  .note { font-size: 0.8rem; color: #888; margin-top: 0.3rem; line-height: 1.5; }
+
+  .data-stats { display: flex; gap: 1.5rem; font-size: 0.9rem; color: #555; margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background: #f8f8f8; border-radius: 4px; }
+  .data-stats strong { color: var(--crimson); font-size: 1rem; margin: 0 0.2rem; }
+  .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+  .btn-danger { background: #d35d5d; color: white; padding: 0.45rem 0.9rem; font-size: 0.85rem; font-family: inherit; border: none; border-radius: 4px; cursor: pointer; }
+  .btn-danger:hover { background: #b54545; }
+  .privacy-notes { background: #fffbea; border-left: 3px solid #d4a017; padding: 0.6rem 0.9rem; font-size: 0.82rem; color: #555; line-height: 1.7; border-radius: 2px; }
+  .privacy-notes p { margin: 0.15rem 0; }
+
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; }
+  footer a, footer .link-btn { color: #888; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font-size: inherit; font-family: inherit; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>会議パック</h1>
+  <div class="subcopy">役員秘書・経営者・士業のための業務ツール集</div>
+
+  <div class="helper-banner">
+    💡 確定済みの会議を <strong>1入力でカレンダー登録URL・ICSファイル・案内文(3版)</strong> に展開。
+    Chatwork/Slack/メールへの貼り付けと、外部関係者へのICS共有が一画面で完結。<br>
+    🔒 すべてブラウザ内で動作。<strong>API送信ゼロ・登録不要・課金なし</strong>。
+  </div>
+
+  <div class="form">
+    <div class="template-bar">
+      <strong>テンプレート:</strong>
+      <select id="templateSelect">
+        <option value="">─ 選択して読み込み ─</option>
+      </select>
+      <button type="button" class="btn-outline" id="saveTemplateBtn">現在の入力をテンプレ保存</button>
+      <button type="button" class="btn-sub" id="deleteTemplateBtn">選択中を削除</button>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>会議タイトル(必須)</label>
+        <input type="text" id="title" placeholder="例: 6月度役員会、○○商事 訪問打合せ">
+      </div>
+      <div class="field" style="max-width:240px;">
+        <label>主催者(あなた・記憶されます)</label>
+        <input type="text" id="organizer" placeholder="例: 西脇">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>開始日付(必須)</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label>開始時刻</label>
+        <input type="time" id="startTime" value="14:00">
+      </div>
+      <div class="field">
+        <label>所要時間</label>
+        <select id="duration">
+          <option value="30">30分</option>
+          <option value="60" selected>1時間</option>
+          <option value="90">1時間30分</option>
+          <option value="120">2時間</option>
+          <option value="180">3時間</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>場所 / オンライン会議URL</label>
+        <input type="text" id="location" placeholder="例: 本社会議室A、または Zoom URL">
+      </div>
+    </div>
+
+    <div class="form-block">
+      <label>出席者(任意・複数可)</label>
+      <div class="attendee-list" id="attendeeList">
+        <div class="attendee-row">
+          <input type="text" class="attendee-input" placeholder="例: 田中">
+          <button type="button" class="remove-attendee" onclick="removeAttendee(this)">×</button>
+        </div>
+      </div>
+      <button type="button" class="btn-sub" id="addAttendeeBtn" style="margin-top:0.3rem;">＋ 出席者を追加</button>
+    </div>
+
+    <div class="form-block">
+      <label>目的・アジェンダ(任意)</label>
+      <textarea id="agenda" placeholder="例: 第二四半期業績レビュー&#10;・各事業部別の数字確認&#10;・次期方針の議論"></textarea>
+    </div>
+
+    <button type="button" class="generate-btn" id="generateBtn">📦 会議パックを生成</button>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="section">
+      <h2>① カレンダー登録・ICSファイル</h2>
+      <div class="actions">
+        <button type="button" class="action-cal" id="openCalBtn">📅 Googleカレンダーで登録</button>
+        <button type="button" class="action-ics" id="downloadIcsBtn">📥 ICSファイルをダウンロード</button>
+      </div>
+      <div class="note">
+        Googleカレンダーボタン:新規イベント画面が事前入力で開きます(社内向け)<br>
+        ICSファイル:メール添付などで外部関係者に配布(GoogleカレンダーやOutlook等で取り込めます)
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>② 案内文(3バリエーション)</h2>
+      <div class="variant-tabs">
+        <button type="button" class="variant-tab active" data-variant="formal">フォーマル(メール用)</button>
+        <button type="button" class="variant-tab" data-variant="casual">カジュアル(Chatwork/Slack用)</button>
+        <button type="button" class="variant-tab" data-variant="minimal">ミニマル(LINE用)</button>
+      </div>
+      <div class="variant-desc" id="variantDesc">フォーマル:社外・お客様向けの案内文</div>
+      <textarea class="output-text" id="outputText" readonly></textarea>
+      <div class="output-toolbar">
+        <button type="button" class="copy-btn" id="copyTextBtn">この文をコピー</button>
+        <span class="copy-status" id="copyStatus"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>過去に作った会議パックの履歴</h2>
+    <div id="historyList"><div class="note">まだ履歴はありません。</div></div>
+  </div>
+
+  <div class="section">
+    <h2>データ管理</h2>
+    <div class="data-stats">
+      <span>📋 履歴: <strong id="historyCount">0</strong>件</span>
+      <span>📑 テンプレート: <strong id="templateCount">0</strong>件</span>
+    </div>
+    <div class="data-actions">
+      <button type="button" class="btn-sub" id="exportDataBtn">📤 全データをエクスポート(JSON)</button>
+      <button type="button" class="btn-sub" id="importDataBtn">📥 インポート</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;">
+      <button type="button" class="btn-danger" id="clearHistoryBtn">全履歴を削除</button>
+      <button type="button" class="btn-danger" id="clearTemplatesBtn">全テンプレを削除</button>
+    </div>
+    <div class="privacy-notes">
+      <p>📌 入力内容・テンプレート・履歴は、お使いのブラウザ内(localStorage)にのみ保存されます。サーバには一切送信されません。</p>
+      <p>📌 <strong>共有PCをご利用の場合</strong>:退席前に上記「全履歴を削除」「全テンプレを削除」で消去するか、ブラウザのプライベートモード(シークレットウィンドウ)でご利用ください。</p>
+      <p>📌 別のPCに移行する場合は「エクスポート」したJSONファイルを、移行先で「インポート」してください。</p>
+    </div>
+  </div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">業務効率化ツールのカスタマイズ・運用代行のご相談 → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+
+    // ----- 出席者リスト -----
+    $('addAttendeeBtn').addEventListener('click', () => addAttendeeRow(''));
+    function addAttendeeRow(val) {
+      const row = document.createElement('div');
+      row.className = 'attendee-row';
+      row.innerHTML = `<input type="text" class="attendee-input" placeholder="例: 佐藤" value="${esc(val)}"><button type="button" class="remove-attendee" onclick="removeAttendee(this)">×</button>`;
+      $('attendeeList').appendChild(row);
+    }
+    window.removeAttendee = function(btn) {
+      const rows = document.querySelectorAll('#attendeeList .attendee-row');
+      if (rows.length <= 1) {
+        btn.closest('.attendee-row').querySelector('input').value = '';
+        return;
+      }
+      btn.closest('.attendee-row').remove();
+    };
+
+    // 主催者の復元
+    $('organizer').value = localStorage.getItem('hishoMtgOrganizer') || '';
+    $('organizer').addEventListener('change', () => {
+      localStorage.setItem('hishoMtgOrganizer', $('organizer').value);
+    });
+
+    // 開始日の初期値=明日
+    (function setDefaultDate() {
+      const tmr = new Date();
+      tmr.setDate(tmr.getDate() + 1);
+      $('startDate').value = tmr.toISOString().slice(0, 10);
+    })();
+
+    // ----- 状態取得 -----
+    function collectFormData() {
+      const title = $('title').value.trim();
+      const date = $('startDate').value;
+      const time = $('startTime').value;
+      const duration = parseInt($('duration').value, 10) || 60;
+      const location = $('location').value.trim();
+      const agenda = $('agenda').value.trim();
+      const organizer = $('organizer').value.trim();
+      const attendees = [...document.querySelectorAll('.attendee-input')].map(i => i.value.trim()).filter(Boolean);
+
+      let start = null, end = null;
+      if (date && time) {
+        const [y, m, d] = date.split('-').map(Number);
+        const [hh, mm] = time.split(':').map(Number);
+        start = new Date(y, m - 1, d, hh, mm);
+        end = new Date(start.getTime() + duration * 60000);
+      }
+
+      return { title, date, time, duration, location, agenda, organizer, attendees, start, end };
+    }
+
+    function applyFormData(d) {
+      $('title').value = d.title || '';
+      $('startDate').value = d.date || '';
+      $('startTime').value = d.time || '14:00';
+      $('duration').value = String(d.duration || 60);
+      $('location').value = d.location || '';
+      $('agenda').value = d.agenda || '';
+      if (d.organizer) $('organizer').value = d.organizer;
+
+      // 出席者リスト再構築
+      $('attendeeList').innerHTML = '';
+      const arr = (d.attendees && d.attendees.length) ? d.attendees : [''];
+      arr.forEach(a => addAttendeeRow(a));
+    }
+
+    // ----- 生成 -----
+    $('generateBtn').addEventListener('click', generate);
+    $('title').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+
+    let currentData = null;
+
+    function generate() {
+      const d = collectFormData();
+      if (!d.title) { alert('会議タイトルを入力してください'); return; }
+      if (!d.start || !d.end) { alert('日付と時刻を入力してください'); return; }
+
+      // 終了 < 開始の検知
+      if (d.end <= d.start) {
+        if (!confirm('⚠️ 終了時刻が開始時刻と同じか前です。\n所要時間の選択が正しいかご確認ください。\n\nこのまま続行しますか?')) return;
+      }
+
+      // 過去日付の誤入力検知(1年以上前)
+      const now = new Date();
+      const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      if (d.start < oneYearAgo) {
+        if (!confirm('⚠️ 開始日時が1年以上過去です。\n日付の入力ミスではありませんか?\n\nこのまま続行しますか?')) return;
+      }
+
+      currentData = d;
+      $('results').classList.remove('hidden');
+      renderVariant(currentVariant);
+      saveToHistory(d);
+      $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ----- Google Calendar URL -----
+    function googleCalUrl(d) {
+      const fmt = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        return `${y}${m}${day}T${hh}${mm}00`;
+      };
+      const params = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: d.title,
+        dates: `${fmt(d.start)}/${fmt(d.end)}`,
+      });
+      if (d.location) params.set('location', d.location);
+      const detailParts = [];
+      if (d.agenda) detailParts.push(d.agenda);
+      if (d.attendees.length) detailParts.push(`出席者: ${d.attendees.join('、')}`);
+      if (d.organizer) detailParts.push(`主催: ${d.organizer}`);
+      if (detailParts.length) params.set('details', detailParts.join('\n\n'));
+      return `https://calendar.google.com/calendar/render?${params.toString()}`;
+    }
+
+    $('openCalBtn').addEventListener('click', () => {
+      if (!currentData) return;
+      window.open(googleCalUrl(currentData), '_blank', 'noopener');
+    });
+
+    // ----- ICS -----
+    function generateICS(d) {
+      const fmt = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        return `${y}${m}${day}T${hh}${mm}00`;
+      };
+      const escText = (s) => (s || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
+      const uid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}@hisho-notes`;
+
+      const description = [
+        d.agenda || '',
+        d.attendees.length ? `\n\n出席者: ${d.attendees.join('、')}` : '',
+        d.organizer ? `\n主催: ${d.organizer}` : '',
+      ].join('').trim();
+
+      const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Hisho Notes//Meeting Pack//JP',
+        'CALSCALE:GREGORIAN',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${fmt(new Date())}`,
+        `DTSTART:${fmt(d.start)}`,
+        `DTEND:${fmt(d.end)}`,
+        `SUMMARY:${escText(d.title)}`,
+      ];
+      if (d.location) lines.push(`LOCATION:${escText(d.location)}`);
+      if (description) lines.push(`DESCRIPTION:${escText(description)}`);
+      if (d.organizer) lines.push(`ORGANIZER;CN=${escText(d.organizer)}:mailto:noreply@example.com`);
+      lines.push('END:VEVENT', 'END:VCALENDAR');
+      return lines.join('\r\n');
+    }
+
+    $('downloadIcsBtn').addEventListener('click', () => {
+      if (!currentData) return;
+      const ics = generateICS(currentData);
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sanitizeFile(currentData.title)}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    function sanitizeFile(name) {
+      return (name || 'meeting').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+    }
+
+    // ----- 案内文 3バリエーション -----
+    let currentVariant = 'formal';
+    const variantDescs = {
+      formal: 'フォーマル:社外・お客様向けの案内文',
+      casual: 'カジュアル:Chatwork/Slack 用、絵文字あり',
+      minimal: 'ミニマル:LINE 用、短文',
+    };
+
+    document.querySelectorAll('.variant-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentVariant = btn.dataset.variant;
+        document.querySelectorAll('.variant-tab').forEach(b => b.classList.toggle('active', b === btn));
+        renderVariant(currentVariant);
+      });
+    });
+
+    function formatDateJP(date) {
+      const y = date.getFullYear();
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const wd = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+      return `${y}年${m}月${d}日(${wd})`;
+    }
+    function formatTime(date) {
+      const h = date.getHours();
+      const m = String(date.getMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function renderVariant(variant) {
+      if (!currentData) return;
+      $('variantDesc').textContent = variantDescs[variant];
+      const d = currentData;
+      const dateStr = formatDateJP(d.start);
+      const timeRange = `${formatTime(d.start)}〜${formatTime(d.end)}`;
+      let text = '';
+
+      if (variant === 'formal') {
+        const lines = [];
+        if (d.attendees.length) lines.push(`${d.attendees.join('、')} 各位`);
+        else lines.push('関係各位');
+        lines.push('');
+        lines.push('下記の通り会議を設定いたしましたのでご案内申し上げます。');
+        lines.push('');
+        lines.push(`件名:${d.title}`);
+        lines.push(`日時:${dateStr} ${timeRange}`);
+        if (d.location) lines.push(`場所:${d.location}`);
+        if (d.agenda) {
+          lines.push('議題:');
+          lines.push(d.agenda);
+        }
+        lines.push('');
+        lines.push('ご都合のほどお知らせください。');
+        if (d.organizer) {
+          lines.push('');
+          lines.push(d.organizer);
+        }
+        text = lines.join('\n');
+      } else if (variant === 'casual') {
+        const lines = [];
+        lines.push(`【${d.title}】`);
+        lines.push(`📅 ${dateStr} ${timeRange}`);
+        if (d.location) lines.push(`📍 ${d.location}`);
+        if (d.agenda) lines.push(`📝 ${d.agenda.split('\n')[0]}`);
+        if (d.attendees.length) {
+          lines.push('');
+          lines.push(`出席者:${d.attendees.map(a => `${a}さん`).join('・')}`);
+        }
+        text = lines.join('\n');
+      } else if (variant === 'minimal') {
+        const lines = [];
+        lines.push(`${dateStr.replace(/\d{4}年/, '')} ${formatTime(d.start)}〜 ${d.title}`);
+        if (d.location) lines.push(`場所:${d.location}`);
+        if (d.agenda) lines.push(`内容:${d.agenda.split('\n')[0]}`);
+        text = lines.join('\n');
+      }
+
+      $('outputText').value = text;
+    }
+
+    $('copyTextBtn').addEventListener('click', async () => {
+      const text = $('outputText').value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        $('copyStatus').textContent = '✓ コピーしました';
+        setTimeout(() => { $('copyStatus').textContent = ''; }, 2500);
+      } catch (e) {
+        $('outputText').select();
+        document.execCommand('copy');
+        $('copyStatus').textContent = '✓ コピーしました';
+        setTimeout(() => { $('copyStatus').textContent = ''; }, 2500);
+      }
+    });
+
+    // ----- テンプレート(localStorage) -----
+    const TKEY = 'hishoMtgTemplates';
+    function getTemplates() {
+      try { return JSON.parse(localStorage.getItem(TKEY) || '[]'); } catch (e) { return []; }
+    }
+    function renderTemplates() {
+      const tpls = getTemplates();
+      const sel = $('templateSelect');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">─ 選択して読み込み ─</option>' +
+        tpls.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`).join('');
+      sel.value = cur;
+    }
+    $('templateSelect').addEventListener('change', () => {
+      const idx = parseInt($('templateSelect').value, 10);
+      if (isNaN(idx)) return;
+      const tpl = getTemplates()[idx];
+      if (!tpl) return;
+      applyFormData(tpl.data);
+    });
+    $('saveTemplateBtn').addEventListener('click', () => {
+      const name = prompt('テンプレ名を入力してください(例: 週次定例、月次役員会)');
+      if (!name) return;
+      const d = collectFormData();
+      const tpls = getTemplates();
+      tpls.push({ name, data: { title: d.title, time: d.time, duration: d.duration, location: d.location, agenda: d.agenda, organizer: d.organizer, attendees: d.attendees } });
+      localStorage.setItem(TKEY, JSON.stringify(tpls));
+      renderTemplates();
+      $('templateSelect').value = String(tpls.length - 1);
+    });
+    $('deleteTemplateBtn').addEventListener('click', () => {
+      const idx = parseInt($('templateSelect').value, 10);
+      if (isNaN(idx)) { alert('削除するテンプレを選択してください'); return; }
+      if (!confirm('このテンプレートを削除します。よろしいですか?')) return;
+      const tpls = getTemplates();
+      tpls.splice(idx, 1);
+      localStorage.setItem(TKEY, JSON.stringify(tpls));
+      renderTemplates();
+    });
+    renderTemplates();
+
+    // ----- 履歴(localStorage) -----
+    const HKEY = 'hishoMtgHistory';
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; }
+    }
+    function saveToHistory(d) {
+      const h = getHistory();
+      h.unshift({
+        title: d.title, date: d.date, time: d.time, duration: d.duration,
+        location: d.location, agenda: d.agenda, organizer: d.organizer,
+        attendees: d.attendees, createdAt: new Date().toISOString()
+      });
+      const trimmed = h.slice(0, 50);
+      localStorage.setItem(HKEY, JSON.stringify(trimmed));
+      renderHistory();
+    }
+    function renderHistory() {
+      const h = getHistory();
+      const list = $('historyList');
+      if (!h.length) { list.innerHTML = '<div class="note">まだ履歴はありません。</div>'; return; }
+      list.innerHTML = h.map((item, i) => {
+        const dt = item.date ? `${item.date} ${item.time || ''}` : '';
+        return `<div class="history-item">
+          <span class="hi-name" data-idx="${i}">${esc(item.title)}</span>
+          <span><span class="hi-meta">${esc(dt)}</span> <button class="history-del" data-del="${i}">削除</button></span>
+        </div>`;
+      }).join('');
+    }
+    $('historyList').addEventListener('click', e => {
+      const nameEl = e.target.closest('.hi-name');
+      if (nameEl) {
+        const item = getHistory()[Number(nameEl.dataset.idx)];
+        if (!item) return;
+        applyFormData(item);
+        generate();
+        return;
+      }
+      const delEl = e.target.closest('.history-del');
+      if (delEl) {
+        const h = getHistory();
+        h.splice(Number(delEl.dataset.del), 1);
+        localStorage.setItem(HKEY, JSON.stringify(h));
+        renderHistory();
+      }
+    });
+    renderHistory();
+
+    // ----- データ管理(エクスポート/インポート/全削除) -----
+    function updateDataCounts() {
+      $('historyCount').textContent = getHistory().length;
+      $('templateCount').textContent = getTemplates().length;
+    }
+    updateDataCounts();
+
+    // 既存の関数呼び出し時にカウンタも更新するためフック
+    const origRenderHistory = renderHistory;
+    renderHistory = function() { origRenderHistory(); updateDataCounts(); };
+    const origRenderTemplates = renderTemplates;
+    renderTemplates = function() { origRenderTemplates(); updateDataCounts(); };
+
+    // エクスポート
+    $('exportDataBtn').addEventListener('click', () => {
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        organizer: localStorage.getItem('hishoMtgOrganizer') || '',
+        templates: getTemplates(),
+        history: getHistory(),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hisho-meeting-pack-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // インポート
+    $('importDataBtn').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!data || typeof data !== 'object') throw new Error('不正なファイル形式です');
+          const msg = `インポートする内容:\n` +
+            `・テンプレート ${(data.templates || []).length}件\n` +
+            `・履歴 ${(data.history || []).length}件\n` +
+            `・主催者: ${data.organizer || '(なし)'}\n\n` +
+            `既存のデータは上書きされます。続行しますか?`;
+          if (!confirm(msg)) return;
+          if (Array.isArray(data.templates)) localStorage.setItem(TKEY, JSON.stringify(data.templates));
+          if (Array.isArray(data.history)) localStorage.setItem(HKEY, JSON.stringify(data.history));
+          if (typeof data.organizer === 'string') {
+            localStorage.setItem('hishoMtgOrganizer', data.organizer);
+            $('organizer').value = data.organizer;
+          }
+          renderTemplates();
+          renderHistory();
+          alert('インポート完了しました。');
+        } catch (err) {
+          alert('インポートに失敗しました:' + err.message);
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+
+    // 全履歴削除
+    $('clearHistoryBtn').addEventListener('click', () => {
+      const n = getHistory().length;
+      if (n === 0) { alert('削除する履歴はありません。'); return; }
+      if (!confirm(`履歴 ${n}件をすべて削除します。\n削除した内容は復元できません(エクスポート済みであれば後でインポート可能)。\n\n続行しますか?`)) return;
+      localStorage.removeItem(HKEY);
+      renderHistory();
+    });
+
+    // 全テンプレ削除
+    $('clearTemplatesBtn').addEventListener('click', () => {
+      const n = getTemplates().length;
+      if (n === 0) { alert('削除するテンプレートはありません。'); return; }
+      if (!confirm(`テンプレート ${n}件をすべて削除します。\n削除した内容は復元できません(エクスポート済みであれば後でインポート可能)。\n\n続行しますか?`)) return;
+      localStorage.removeItem(TKEY);
+      renderTemplates();
+    });
+
+    // ----- 免責 -----
+    $('openDisclaimer').addEventListener('click', () => {
+      alert('本ツールは無償で提供されるサンプル実装です。外部APIや個人情報の外部送信は行いません。入力内容・テンプレ・履歴・主催者名はお使いのブラウザ(localStorage)にのみ保存されます。Googleカレンダー登録URLとICSファイル生成は、ブラウザ内で文字列を組み立てているだけです。本ツール利用に起因する一切の損害について作者は責任を負いません。MITライセンス。');
+    });
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
