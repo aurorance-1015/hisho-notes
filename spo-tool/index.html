@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>秘書ノート 番外編 / スポ少 配車割ジェネレータ</title>
+<title>秘書ノート 番外編 / スポ少サポートツール</title>
 <style>
   :root { --crimson: #e07b35; --crimson-dark: #b85d1f; --navy: #1f2d3d; --soft-cream: #fff4ea; }
   * { box-sizing: border-box; }
@@ -11,8 +11,16 @@
   .brand-row { display: flex; align-items: baseline; gap: 0.5rem; color: #888; font-size: 0.85rem; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
   .badge { background: #555; color: white; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; letter-spacing: 0; }
   h1 { font-size: 1.5rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
-  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem; }
   .helper { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.8rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; line-height: 1.5; }
+
+  /* タブ */
+  .tabs { display: flex; gap: 0.4rem; margin-bottom: 1.2rem; border-bottom: 2px solid #eee; }
+  .tab { background: none; border: none; padding: 0.6rem 1.1rem; font-size: 0.95rem; font-weight: 600; color: #999; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab:hover { color: var(--crimson-dark); }
+  .tab.active { color: var(--crimson); border-bottom-color: var(--crimson); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
   .form { background: white; padding: 1.2rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
   .form-block { margin-bottom: 1rem; }
@@ -22,14 +30,16 @@
   .row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
   .row > * { flex: 1; min-width: 130px; }
 
-  .driver-list { margin-top: 0.3rem; }
-  .driver-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .driver-list, .role-list, .person-list { margin-top: 0.3rem; }
+  .driver-row, .role-row, .date-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
   .driver-row input[type=text] { flex: 2; }
   .driver-row input[type=number] { flex: 1; max-width: 90px; }
-  .remove-driver { background: #ddd; color: #666; border: none; border-radius: 4px; cursor: pointer; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
-  .remove-driver:hover { background: #ccc; }
-  .add-driver { background: #888; color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 0.3rem; font-family: inherit; }
-  .add-driver:hover { background: #666; }
+  .role-row input[type=date] { flex: 1.3; }
+  .role-row input[type=text] { flex: 2; }
+  .remove-row { background: #ddd; color: #666; border: none; border-radius: 4px; cursor: pointer; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  .remove-row:hover { background: #ccc; }
+  .add-row { background: #888; color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-top: 0.3rem; font-family: inherit; }
+  .add-row:hover { background: #666; }
 
   .generate-btn { display: block; width: 100%; background: var(--crimson); color: white; border: none; padding: 1rem; border-radius: 6px; font-size: 1.15rem; font-weight: bold; cursor: pointer; font-family: inherit; margin-top: 0.5rem; box-shadow: 0 2px 6px rgba(224,123,53,0.28); transition: all 0.15s; }
   .generate-btn:hover { background: var(--crimson-dark); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(224,123,53,0.35); }
@@ -45,100 +55,341 @@
   .copy-status { color: #0b8043; font-size: 0.85rem; }
   .warning { background: #fff4e1; color: #b76300; padding: 0.5rem 0.7rem; border-radius: 4px; font-size: 0.85rem; margin-top: 0.4rem; }
 
+  /* 担当回数ビュー */
+  .tally { background: #f8f8f8; border-radius: 6px; padding: 0.8rem 1rem; margin-top: 0.8rem; font-size: 0.9rem; }
+  .tally h3 { font-size: 0.9rem; margin: 0 0 0.5rem; color: var(--navy); }
+  .tally-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+  .tally-name { width: 5rem; flex-shrink: 0; }
+  .tally-count { background: var(--crimson); height: 1rem; border-radius: 3px; min-width: 2px; }
+  .tally-num { font-size: 0.85rem; color: #666; }
+  .history-note { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+  .clear-history { background: none; border: none; color: #c06; text-decoration: underline; cursor: pointer; font-size: 0.8rem; padding: 0; font-family: inherit; }
+
   .note { font-size: 0.78rem; color: #888; margin-top: 0.4rem; line-height: 1.5; }
 
+  /* サブモード切替(日常/イベント) */
+  .submode-desc { font-size: 0.82rem; color: #888; margin-bottom: 0.8rem; line-height: 1.5; }
+
+  /* イベント役割行 */
+  .erole-row { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; }
+  .erole-row .erole-name { flex: 2; min-width: 110px; }
+  .erole-row .erole-num { flex: 0; width: 70px; }
+  .erole-hold { display: flex; align-items: center; gap: 0.2rem; font-size: 0.8rem; color: #666; font-weight: normal; white-space: nowrap; }
+  .erole-hold input { width: auto; }
+
+  /* 曜日ピッカー */
+  .weekday-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .wd-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 20px; font-size: 0.85rem; font-weight: normal; color: #555; cursor: pointer; margin: 0; user-select: none; }
+  .wd-chip input { width: auto; margin: 0; }
+  .wd-chip:has(input:checked) { background: var(--soft-cream); border-color: var(--crimson); color: var(--crimson-dark); font-weight: 600; }
+
+  /* 試合行 */
+  .game-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .game-row .game-date { flex: 1.3; }
+  .game-row .game-name { flex: 2; }
+
   footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; line-height: 1.6; }
-  footer a, footer button { color: #888; text-decoration: underline; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
-  footer a:hover, footer button:hover { color: #555; }
+  footer a, footer button.link { color: #888; text-decoration: underline; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+  footer a:hover, footer button.link:hover { color: #555; }
   .extra-mark { display: inline-block; background: #555; color: white; padding: 0.05rem 0.3rem; border-radius: 2px; font-size: 0.7rem; margin-right: 0.3rem; }
 
   @media (max-width: 600px) {
     body { margin: 1rem auto; }
     h1 { font-size: 1.3rem; }
     .row { gap: 0.5rem; }
+    .tab { padding: 0.5rem 0.7rem; font-size: 0.88rem; }
   }
 </style>
 </head>
 <body>
   <div class="brand-row">秘書ノート Hisho Notes <span class="badge">番外編</span></div>
-  <h1>スポ少 配車割ジェネレータ</h1>
-  <div class="subcopy">入力した参加メンバーを、車のキャパシティに合わせて自動で割り振り → LINEに貼り付け可能なテキストを生成します。</div>
+  <h1>スポ少サポートツール</h1>
+  <div class="subcopy">スポ少の運営作業を、ボタン一発で LINEに貼り付けできるテキストに。</div>
 
   <div class="helper">
-    🏀 娘のミニバスで気づいた仕事を、ツールにしてみました。<br>
+    🏀 娘のミニバスで気づいた運営作業を、ツールにしてみました。<br>
     売り物ではなく <strong>「作ってみた」</strong> 系です。問い合わせサポートは行っていません(Issueは歓迎)。
   </div>
 
-  <div class="form">
-    <div class="form-block">
-      <div class="row">
-        <div>
-          <label>集合日付</label>
-          <input type="date" id="meetDate">
-        </div>
-        <div>
-          <label>集合時刻</label>
-          <input type="time" id="meetTime" value="08:00">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-block">
-      <label>集合場所・目的地</label>
-      <input type="text" id="meetPlace" placeholder="例:○○体育館、△△グラウンド">
-    </div>
-
-    <div class="form-block">
-      <label>参加する子(1行に1人ずつ)</label>
-      <textarea id="kidsList" placeholder="田中太郎&#10;佐藤花子&#10;鈴木一郎&#10;..."></textarea>
-      <div class="note">姓が車のドライバー姓と一致する子は、その家の車に優先で乗ります。</div>
-    </div>
-
-    <div class="form-block">
-      <label>車を出せる家(ドライバー名・最大乗車数)</label>
-      <div class="driver-list" id="driverList">
-        <div class="driver-row">
-          <input type="text" class="driver-name" placeholder="例:田中">
-          <input type="number" class="driver-cap" min="1" max="10" value="4" aria-label="席数">
-          <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
-        </div>
-        <div class="driver-row">
-          <input type="text" class="driver-name" placeholder="例:山田">
-          <input type="number" class="driver-cap" min="1" max="10" value="3" aria-label="席数">
-          <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
-        </div>
-      </div>
-      <button type="button" class="add-driver" id="addDriverBtn">＋ 車を追加</button>
-      <div class="note">乗車数は子どもの数(ドライバー自身は含めない)。例:4席=子4人まで。</div>
-    </div>
-
-    <button type="button" class="generate-btn" id="generateBtn">🚗 配車を生成</button>
+  <div class="tabs">
+    <button type="button" class="tab active" data-tab="carpool">🚗 校外試合(配車)</button>
+    <button type="button" class="tab" data-tab="daily">📋 練習当番</button>
+    <button type="button" class="tab" data-tab="event">🏫 自校試合(設営)</button>
   </div>
 
-  <div class="output-section" id="outputSection">
-    <h2>📋 LINEに貼り付け用テキスト</h2>
-    <textarea class="output-text" id="outputText" readonly></textarea>
-    <div class="output-actions">
-      <button type="button" class="copy-btn" id="copyBtn">コピーする</button>
-      <span class="copy-status" id="copyStatus"></span>
+  <!-- ============ 校外試合(配車)タブ ============ -->
+  <div class="tab-panel active" id="tab-carpool">
+    <div class="submode-desc">他校での試合・遠征など、<strong>車で移動する日</strong>。集合案内 + 配車割(引率)を作成します。</div>
+    <div class="form">
+      <div class="form-block">
+        <div class="row">
+          <div>
+            <label>試合名(任意)</label>
+            <input type="text" id="carEventName" placeholder="例:○○招待試合、△△との練習試合">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-block">
+        <div class="row">
+          <div>
+            <label>集合日付</label>
+            <input type="date" id="meetDate">
+          </div>
+          <div>
+            <label>集合時刻</label>
+            <input type="time" id="meetTime" value="08:00">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-block">
+        <label>集合場所</label>
+        <input type="text" id="meetPlace" placeholder="例:学校駐車場、○○体育館">
+      </div>
+
+      <div class="form-block">
+        <label>会場・行き先(任意)</label>
+        <input type="text" id="carVenue" placeholder="例:△△小学校 体育館">
+      </div>
+
+      <div class="form-block">
+        <label>備考(任意)</label>
+        <input type="text" id="carNote" placeholder="例:お弁当・飲み物持参、13時終了予定">
+      </div>
+
+      <div class="form-block">
+        <label>参加する子(1行に1人ずつ)</label>
+        <textarea id="kidsList" placeholder="田中太郎&#10;佐藤花子&#10;鈴木一郎&#10;..."></textarea>
+        <div class="note">姓が車のドライバー姓と一致する子は、その家の車に優先で乗ります。</div>
+      </div>
+
+      <div class="form-block">
+        <label>車を出せる家(ドライバー名・最大乗車数)</label>
+        <div class="driver-list" id="driverList">
+          <div class="driver-row">
+            <input type="text" class="driver-name" placeholder="例:田中">
+            <input type="number" class="driver-cap" min="1" max="10" value="4" aria-label="席数">
+            <button type="button" class="remove-row" onclick="removeDriver(this)">×</button>
+          </div>
+          <div class="driver-row">
+            <input type="text" class="driver-name" placeholder="例:山田">
+            <input type="number" class="driver-cap" min="1" max="10" value="3" aria-label="席数">
+            <button type="button" class="remove-row" onclick="removeDriver(this)">×</button>
+          </div>
+        </div>
+        <button type="button" class="add-row" id="addDriverBtn">＋ 車を追加</button>
+        <div class="note">乗車数は子どもの数(ドライバー自身は含めない)。例:4席=子4人まで。</div>
+      </div>
+
+      <button type="button" class="generate-btn" id="generateBtn">🚗 配車を生成</button>
     </div>
-    <div class="warning" id="warningArea" style="display:none;"></div>
-    <div class="note">生成結果はこのブラウザ内のみ。サーバには一切送信していません。次回はそのまま再生成できるように、入力内容は localStorage に保存されます。</div>
+
+    <div class="output-section" id="outputSection">
+      <h2>📋 LINEに貼り付け用テキスト</h2>
+      <textarea class="output-text" id="outputText" readonly></textarea>
+      <div class="output-actions">
+        <button type="button" class="copy-btn" id="copyBtn">コピーする</button>
+        <span class="copy-status" id="copyStatus"></span>
+      </div>
+      <div class="warning" id="warningArea" style="display:none;"></div>
+      <div class="note">生成結果はこのブラウザ内のみ。サーバには一切送信していません。入力内容は localStorage に保存されます。</div>
+    </div>
+  </div>
+
+  <!-- ============ 練習当番タブ(月間表) ============ -->
+  <div class="tab-panel" id="tab-daily">
+      <div class="submode-desc">期間と曜日を指定すると、練習日の当番を<strong>1ヶ月分まとめて公平ローテ</strong>。お休みは除外、試合の日は予告として表示します。月初に配る「今月の予定表」向け。</div>
+      <div class="form">
+        <div class="form-block">
+          <label>保護者リスト(1行に1人ずつ)</label>
+          <textarea id="parentList" placeholder="田中&#10;佐藤&#10;鈴木&#10;高橋&#10;伊藤&#10;渡辺"></textarea>
+        </div>
+
+        <div class="form-block">
+          <label>期間</label>
+          <div class="row">
+            <div><input type="date" id="periodFrom" aria-label="開始日"></div>
+            <div style="align-self:center; flex:0; padding:0 0.2rem;">〜</div>
+            <div><input type="date" id="periodTo" aria-label="終了日"></div>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <label>練習曜日</label>
+          <div class="weekday-picker" id="weekdayPicker">
+            <label class="wd-chip"><input type="checkbox" value="0">日</label>
+            <label class="wd-chip"><input type="checkbox" value="1">月</label>
+            <label class="wd-chip"><input type="checkbox" value="2">火</label>
+            <label class="wd-chip"><input type="checkbox" value="3">水</label>
+            <label class="wd-chip"><input type="checkbox" value="4">木</label>
+            <label class="wd-chip"><input type="checkbox" value="5" checked>金</label>
+            <label class="wd-chip"><input type="checkbox" value="6" checked>土</label>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <div class="row">
+            <div>
+              <label>1日あたりの当番数</label>
+              <input type="number" id="perDayCount" min="1" max="10" value="2">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <label>お休み(練習なしの日・任意)</label>
+          <input type="text" id="holidayList" placeholder="例:2026-07-22, 2026-07-23(カンマ区切り)">
+          <div class="note">お盆・祝日など練習がない日。当番表から除外されます。</div>
+        </div>
+
+        <div class="form-block">
+          <label>試合・練習試合の予定(任意)</label>
+          <div class="game-list" id="gameList">
+            <div class="game-row">
+              <input type="date" class="game-date" aria-label="試合日">
+              <input type="text" class="game-name" placeholder="例:○○カップ">
+              <button type="button" class="remove-row" onclick="removeGame(this)">×</button>
+            </div>
+          </div>
+          <button type="button" class="add-row" id="addGameBtn">＋ 試合を追加</button>
+          <div class="note">試合日は当番を割り振らず「🏀 ○○カップ ※出欠・詳細は別途」と予告表示します。役割分担は「イベント当番」で作成してください。</div>
+        </div>
+
+        <button type="button" class="generate-btn" id="dutyGenerateBtn">📋 月間当番表を生成</button>
+      </div>
+
+      <div class="output-section" id="dutyOutputSection">
+        <h2>📋 LINEに貼り付け用テキスト</h2>
+        <textarea class="output-text" id="dutyOutputText" readonly></textarea>
+        <div class="output-actions">
+          <button type="button" class="copy-btn" id="dutyCopyBtn">コピーする</button>
+          <span class="copy-status" id="dutyCopyStatus"></span>
+          <button type="button" class="copy-btn" id="dutyConfirmBtn" style="background:#555;">この割り振りを履歴に記録</button>
+        </div>
+        <div class="warning" id="dutyWarningArea" style="display:none;"></div>
+
+        <div class="tally" id="dutyTally">
+          <h3>担当回数(今シーズン累計・公平性チェック)</h3>
+          <div id="tallyBars"></div>
+          <div class="history-note">
+            「履歴に記録」を押すと、この割り振りの回数がシーズン累計に加算され、次回の当番表作成時に自動で反映されます(回数が少ない人が優先されます)。
+            <button type="button" class="clear-history" id="clearDutyHistory">累計をリセット</button>
+          </div>
+        </div>
+        <div class="note">生成結果・累計はこのブラウザ内のみ(localStorage)。サーバには一切送信していません。</div>
+      </div>
+    </div>
+
+  <!-- ============ 自校試合(設営)タブ ============ -->
+  <div class="tab-panel" id="tab-event">
+      <div class="submode-desc">自分の学校での試合・大会など、<strong>多くの保護者が集まって会場設営する日</strong>。開催案内 + 役割分担を作成。希望を考慮し、会場に留まる「常駐」役割は常駐NGの人を避けます。</div>
+      <div class="form">
+        <div class="form-block">
+          <label>試合名・日付</label>
+          <div class="row">
+            <input type="text" id="eventName" placeholder="例:○○カップ、△△との練習試合" style="flex:2;">
+            <input type="date" id="eventDate" style="flex:1;" aria-label="試合日付">
+          </div>
+        </div>
+
+        <div class="form-block">
+          <div class="row">
+            <div>
+              <label>会場(任意)</label>
+              <input type="text" id="eventVenue" placeholder="例:市民体育館">
+            </div>
+            <div style="flex:0; min-width:120px;">
+              <label>集合時間(任意)</label>
+              <input type="time" id="eventTime">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <label>備考(任意)</label>
+          <input type="text" id="eventNote" placeholder="例:お弁当持参・雨天決行">
+        </div>
+
+        <div class="form-block">
+          <label>当日来られる保護者(1行に1人ずつ)</label>
+          <textarea id="eventParents" placeholder="田中&#10;佐藤&#10;鈴木&#10;高橋&#10;伊藤&#10;渡辺&#10;山田"></textarea>
+        </div>
+
+        <div class="form-block">
+          <label>役割(役割名・必要人数・常駐かどうか)</label>
+          <div class="erole-list" id="eroleList"></div>
+          <button type="button" class="add-row" id="addEroleBtn">＋ 役割を追加</button>
+          <div class="note">「常駐」= 会場に留まる必要がある役割(その役を希望しない人を優先的に外します)。</div>
+        </div>
+
+        <div class="form-block">
+          <label>役割の希望(任意・1行に「名前:希望役割」)</label>
+          <textarea id="eventWishes" placeholder="田中:体育館&#10;佐藤:駐車場&#10;高橋:常駐NG&#10;鈴木:なんでも" style="min-height:70px;"></textarea>
+          <div class="note">書かない人は「なんでもOK」扱い。「名前:常駐NG」と書くと常駐役割を避けます。</div>
+        </div>
+
+        <button type="button" class="generate-btn" id="eventGenerateBtn">🎪 役割分担表を生成</button>
+      </div>
+
+      <div class="output-section" id="eventOutputSection">
+        <h2>📋 LINEに貼り付け用テキスト</h2>
+        <textarea class="output-text" id="eventOutputText" readonly></textarea>
+        <div class="output-actions">
+          <button type="button" class="copy-btn" id="eventCopyBtn">コピーする</button>
+          <span class="copy-status" id="eventCopyStatus"></span>
+          <button type="button" class="copy-btn" id="eventConfirmBtn" style="background:#555;">この割り振りを履歴に記録</button>
+        </div>
+        <div class="warning" id="eventWarningArea" style="display:none;"></div>
+
+        <div class="tally" id="eventTally">
+          <h3>イベント役割の担当回数(累計)</h3>
+          <div id="eventTallyBars"></div>
+          <div class="history-note">
+            イベント当番も「履歴に記録」で累計が残り、次回は担当回数の少ない人が優先されます(希望が最優先)。
+            <button type="button" class="clear-history" id="clearEventHistory">累計をリセット</button>
+          </div>
+        </div>
+        <div class="note">生成結果・累計はこのブラウザ内のみ(localStorage)。サーバには一切送信していません。</div>
+      </div>
   </div>
 
   <footer>
     <span class="extra-mark">番外編</span>秘書ノート Hisho Notes ―
-    <button type="button" id="openAbout">これ何?</button> /
+    <button type="button" class="link" id="openAbout">これ何?</button> /
     <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
     <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
-    <div style="margin-top:0.4rem;">本編の業務ツール(訪問先カルテ・会食店ピックアップ)は GitHubの hisho-notes リポジトリで公開中</div>
+    <div style="margin-top:0.4rem;">本編の業務ツール(訪問先カルテ・会食店ピックアップ・会議パック)は GitHubの hisho-notes リポジトリで公開中</div>
   </footer>
 
   <script>
     'use strict';
     const $ = id => document.getElementById(id);
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
 
-    // ----- ドライバー行 動的追加/削除 -----
+    // ===== タブ切替 =====
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const name = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`));
+        localStorage.setItem('hishoSpoActiveTab', name);
+      });
+    });
+    // 前回のタブを復元
+    (function() {
+      const last = localStorage.getItem('hishoSpoActiveTab');
+      if (last) {
+        const tab = document.querySelector(`.tab[data-tab="${last}"]`);
+        if (tab) tab.click();
+      }
+    })();
+
+    /* ============================================================
+       校外試合(配車)ロジック
+       ============================================================ */
     $('addDriverBtn').addEventListener('click', () => addDriverRow('', 4));
     function addDriverRow(name, cap) {
       const row = document.createElement('div');
@@ -146,14 +397,13 @@
       row.innerHTML = `
         <input type="text" class="driver-name" placeholder="例:佐藤" value="${esc(name)}">
         <input type="number" class="driver-cap" min="1" max="10" value="${cap || 4}" aria-label="席数">
-        <button type="button" class="remove-driver" onclick="removeDriver(this)">×</button>
+        <button type="button" class="remove-row" onclick="removeDriver(this)">×</button>
       `;
       $('driverList').appendChild(row);
     }
     window.removeDriver = function(btn) {
-      const rows = document.querySelectorAll('.driver-row');
+      const rows = document.querySelectorAll('#driverList .driver-row');
       if (rows.length <= 1) {
-        // 最後の1行は消さずに中身だけクリア
         const r = btn.closest('.driver-row');
         r.querySelector('.driver-name').value = '';
         r.querySelector('.driver-cap').value = 4;
@@ -162,12 +412,14 @@
       btn.closest('.driver-row').remove();
     };
 
-    // ----- localStorage 復元 -----
     const SKEY = 'hishoSpoToolLast';
-    function restore() {
+    (function restore() {
       try {
         const data = JSON.parse(localStorage.getItem(SKEY) || '{}');
+        if (data.eventName) $('carEventName').value = data.eventName;
         if (data.place) $('meetPlace').value = data.place;
+        if (data.venue) $('carVenue').value = data.venue;
+        if (data.carNote) $('carNote').value = data.carNote;
         if (data.kids) $('kidsList').value = data.kids;
         if (data.time) $('meetTime').value = data.time;
         if (Array.isArray(data.drivers) && data.drivers.length) {
@@ -175,42 +427,37 @@
           data.drivers.forEach(d => addDriverRow(d.name || '', d.cap || 4));
         }
       } catch (e) {}
-    }
-    restore();
-    // 日付のデフォルト=明日
+    })();
     if (!$('meetDate').value) {
-      const tmr = new Date();
-      tmr.setDate(tmr.getDate() + 1);
-      const y = tmr.getFullYear();
-      const m = String(tmr.getMonth() + 1).padStart(2, '0');
-      const d = String(tmr.getDate()).padStart(2, '0');
-      $('meetDate').value = `${y}-${m}-${d}`;
+      const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+      $('meetDate').value = `${tmr.getFullYear()}-${String(tmr.getMonth()+1).padStart(2,'0')}-${String(tmr.getDate()).padStart(2,'0')}`;
     }
 
-    function saveCurrent() {
-      const drivers = [...document.querySelectorAll('.driver-row')].map(r => ({
+    function saveCarpool() {
+      const drivers = [...document.querySelectorAll('#driverList .driver-row')].map(r => ({
         name: r.querySelector('.driver-name').value.trim(),
         cap: parseInt(r.querySelector('.driver-cap').value, 10) || 1,
       }));
-      const data = {
+      localStorage.setItem(SKEY, JSON.stringify({
+        eventName: $('carEventName').value.trim(),
         place: $('meetPlace').value.trim(),
+        venue: $('carVenue').value.trim(),
+        carNote: $('carNote').value.trim(),
         kids: $('kidsList').value,
         time: $('meetTime').value,
         drivers,
-      };
-      localStorage.setItem(SKEY, JSON.stringify(data));
+      }));
     }
 
-    // ----- 配車割ロジック -----
-    function generate() {
+    function generateCarpool() {
+      const eventName = $('carEventName').value.trim();
       const date = $('meetDate').value;
       const time = $('meetTime').value;
       const place = $('meetPlace').value.trim();
-
-      const kidsRaw = $('kidsList').value;
-      const kids = kidsRaw.split('\n').map(s => s.trim()).filter(Boolean);
-
-      const drivers = [...document.querySelectorAll('.driver-row')]
+      const venue = $('carVenue').value.trim();
+      const carNote = $('carNote').value.trim();
+      const kids = $('kidsList').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const drivers = [...document.querySelectorAll('#driverList .driver-row')]
         .map(r => ({
           name: r.querySelector('.driver-name').value.trim().replace(/車$|さん$/, ''),
           cap: parseInt(r.querySelector('.driver-cap').value, 10) || 0,
@@ -221,75 +468,534 @@
       if (!kids.length) { alert('参加する子を入力してください'); return; }
       if (!drivers.length) { alert('車を出せる家を1台以上入力してください'); return; }
 
-      // 1) ドライバー姓と子の姓が一致する場合は優先割り当て
       const assigned = new Set();
       for (const d of drivers) {
-        if (!d.name) continue;
         for (const k of kids) {
           if (assigned.has(k)) continue;
           if (k.startsWith(d.name)) {
-            if (d.kids.length < d.cap) {
-              d.kids.push(k);
-              assigned.add(k);
-            }
+            if (d.kids.length < d.cap) { d.kids.push(k); assigned.add(k); }
             break;
           }
         }
       }
-
-      // 2) 残りの子を順番に空席ある車へ
       const uncovered = [];
       for (const k of kids) {
         if (assigned.has(k)) continue;
         let placed = false;
         for (const d of drivers) {
-          if (d.kids.length < d.cap) {
-            d.kids.push(k);
-            assigned.add(k);
-            placed = true;
-            break;
-          }
+          if (d.kids.length < d.cap) { d.kids.push(k); assigned.add(k); placed = true; break; }
         }
         if (!placed) uncovered.push(k);
       }
 
-      const totalCap = drivers.reduce((s, d) => s + d.cap, 0);
-
-      // テキスト整形
       const lines = [];
       const dateStr = date ? formatDateJP(date) : '';
-      const timeStr = time || '';
-      lines.push(`【配車のお知らせ】`);
-      if (dateStr) lines.push(`${dateStr} ${timeStr} 集合`);
-      else if (timeStr) lines.push(`${timeStr} 集合`);
-      if (place) lines.push(`場所:${place}`);
+      lines.push(`【${eventName || '配車'}のお知らせ】`);
+      if (dateStr || time) lines.push(`📅 ${[dateStr, time].filter(Boolean).join(' ')} 集合`);
+      if (place) lines.push(`📍 集合場所:${place}`);
+      if (venue) lines.push(`🏫 会場:${venue}`);
+      if (carNote) lines.push(carNote);
       lines.push('');
+      lines.push('▼ 配車');
       drivers.forEach(d => {
-        if (!d.kids.length) {
-          lines.push(`🚗 ${d.name}車(${d.cap}席):—`);
-        } else {
-          lines.push(`🚗 ${d.name}車(${d.cap}席):${d.kids.join('・')}`);
-        }
+        lines.push(`🚗 ${d.name}車(${d.cap}席):${d.kids.length ? d.kids.join('・') : '—'}`);
       });
       lines.push('');
       lines.push('※ 乗り合わせ場所の希望は前日までにLINEへ');
 
       $('outputText').value = lines.join('\n');
       $('outputSection').classList.add('show');
-
-      // 警告(子が車に乗り切れない場合)
+      const w = $('warningArea');
       if (uncovered.length) {
-        const w = $('warningArea');
         w.style.display = '';
         w.textContent = `⚠ ${uncovered.length}人分の席が足りません(${uncovered.join('・')})。車を追加するか、人数調整してください。`;
-      } else {
-        $('warningArea').style.display = 'none';
-      }
+      } else { w.style.display = 'none'; }
 
-      saveCurrent();
+      saveCarpool();
       $('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    $('generateBtn').addEventListener('click', generateCarpool);
 
+    $('copyBtn').addEventListener('click', () => copyText($('outputText').value, $('copyStatus')));
+
+    /* ============================================================
+       当番組ロジック(v1.1)
+       ============================================================ */
+    const DUTY_KEY = 'hishoSpoDutyInput';   // 入力の保存
+    const TALLY_KEY = 'hishoSpoDutyTally';  // 累計回数の保存
+
+    // 試合行の追加/削除
+    $('addGameBtn').addEventListener('click', () => addGameRow('', ''));
+    function addGameRow(date, name) {
+      const row = document.createElement('div');
+      row.className = 'game-row';
+      row.innerHTML = `
+        <input type="date" class="game-date" value="${esc(date)}" aria-label="試合日">
+        <input type="text" class="game-name" placeholder="例:○○カップ" value="${esc(name)}">
+        <button type="button" class="remove-row" onclick="removeGame(this)">×</button>
+      `;
+      $('gameList').appendChild(row);
+    }
+    window.removeGame = function(btn) {
+      const rows = document.querySelectorAll('#gameList .game-row');
+      if (rows.length <= 1) {
+        const r = btn.closest('.game-row');
+        r.querySelector('.game-date').value = '';
+        r.querySelector('.game-name').value = '';
+        return;
+      }
+      btn.closest('.game-row').remove();
+    };
+
+    // 累計回数
+    function getTally() {
+      try { return JSON.parse(localStorage.getItem(TALLY_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function setTally(t) { localStorage.setItem(TALLY_KEY, JSON.stringify(t)); }
+
+    // 入力復元
+    (function restoreDuty() {
+      try {
+        const d = JSON.parse(localStorage.getItem(DUTY_KEY) || '{}');
+        if (d.parents) $('parentList').value = d.parents;
+        if (d.from) $('periodFrom').value = d.from;
+        if (d.to) $('periodTo').value = d.to;
+        if (typeof d.perDay === 'number') $('perDayCount').value = d.perDay;
+        if (d.holidays) $('holidayList').value = d.holidays;
+        if (Array.isArray(d.weekdays)) {
+          document.querySelectorAll('#weekdayPicker input').forEach(cb => {
+            cb.checked = d.weekdays.includes(Number(cb.value));
+          });
+        }
+        if (Array.isArray(d.games) && d.games.length) {
+          $('gameList').innerHTML = '';
+          d.games.forEach(g => addGameRow(g.date || '', g.name || ''));
+        }
+      } catch (e) {}
+    })();
+
+    // 期間の初期値=今月1日〜月末(未設定時)
+    (function setDefaultPeriod() {
+      if ($('periodFrom').value && $('periodTo').value) return;
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      if (!$('periodFrom').value) $('periodFrom').value = ymd(first);
+      if (!$('periodTo').value) $('periodTo').value = ymd(last);
+    })();
+
+    function saveDutyInput(extra) {
+      localStorage.setItem(DUTY_KEY, JSON.stringify(Object.assign({
+        parents: $('parentList').value,
+        from: $('periodFrom').value,
+        to: $('periodTo').value,
+        perDay: parseInt($('perDayCount').value, 10) || 2,
+        holidays: $('holidayList').value,
+        weekdays: [...document.querySelectorAll('#weekdayPicker input:checked')].map(cb => Number(cb.value)),
+        games: [...document.querySelectorAll('#gameList .game-row')]
+          .map(r => ({ date: r.querySelector('.game-date').value, name: r.querySelector('.game-name').value.trim() }))
+          .filter(g => g.date && g.name),
+      }, extra || {})));
+    }
+
+    let lastDutyAssignments = null; // 履歴記録用に保持
+
+    function ymd(date) {
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
+
+    function generateDuty() {
+      const parents = $('parentList').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const from = $('periodFrom').value;
+      const to = $('periodTo').value;
+      const perDay = parseInt($('perDayCount').value, 10) || 2;
+      const weekdays = [...document.querySelectorAll('#weekdayPicker input:checked')].map(cb => Number(cb.value));
+      const holidays = new Set($('holidayList').value.split(/[,、]/).map(s => s.trim()).filter(Boolean));
+
+      const games = {}; // date -> name
+      [...document.querySelectorAll('#gameList .game-row')].forEach(r => {
+        const d = r.querySelector('.game-date').value;
+        const n = r.querySelector('.game-name').value.trim();
+        if (d && n) games[d] = n;
+      });
+
+      if (!parents.length) { alert('保護者リストを入力してください'); return; }
+      if (!from || !to) { alert('期間を入力してください'); return; }
+      if (from > to) { alert('期間の開始日が終了日より後になっています'); return; }
+      if (!weekdays.length) { alert('練習曜日を1つ以上選んでください'); return; }
+
+      // 期間内の練習日を列挙
+      const start = new Date(from + 'T00:00:00');
+      const end = new Date(to + 'T00:00:00');
+      const days = []; // {date:'YYYY-MM-DD', type:'practice'|'game'|'holiday', gameName}
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = ymd(d);
+        if (games[key]) { days.push({ date: key, type: 'game', gameName: games[key] }); continue; }
+        if (!weekdays.includes(d.getDay())) continue; // 練習曜日以外はスキップ
+        if (holidays.has(key)) { days.push({ date: key, type: 'holiday' }); continue; }
+        days.push({ date: key, type: 'practice' });
+      }
+
+      const practiceDays = days.filter(d => d.type === 'practice');
+      if (!practiceDays.length) {
+        alert('指定された期間・曜日に練習日がありません。条件をご確認ください。');
+        return;
+      }
+
+      // 公平ローテ割り振り
+      const tally = getTally();
+      const working = {};
+      parents.forEach(p => { working[p] = tally[p] || 0; });
+
+      const assignments = []; // {date, people:[]}
+      let prevDay = new Set();
+      let shortage = false;
+
+      for (const pd of practiceDays) {
+        const todaySet = new Set();
+        const people = [];
+        for (let i = 0; i < perDay; i++) {
+          const cands = parents.filter(p => !todaySet.has(p));
+          if (!cands.length) { people.push('(人手不足)'); shortage = true; continue; }
+          cands.sort((a, b) => {
+            const wa = working[a] + (prevDay.has(a) ? 0.5 : 0);
+            const wb = working[b] + (prevDay.has(b) ? 0.5 : 0);
+            if (wa !== wb) return wa - wb;
+            return a.localeCompare(b);
+          });
+          const chosen = cands[0];
+          working[chosen] += 1;
+          todaySet.add(chosen);
+          people.push(chosen);
+        }
+        assignments.push({ date: pd.date, people });
+        prevDay = todaySet;
+      }
+
+      lastDutyAssignments = { assignments, available: parents };
+
+      // テキスト整形(全日程を時系列で:練習=当番、試合=予告、休み=お休み)
+      const lines = [];
+      const monthLabel = formatMonthRange(from, to);
+      lines.push(`【${monthLabel} 当番・予定表】`);
+      lines.push('');
+      const assignMap = {};
+      assignments.forEach(a => { assignMap[a.date] = a.people; });
+      for (const d of days) {
+        const dj = formatDateJP(d.date);
+        if (d.type === 'game') {
+          lines.push(`━━━━━━━━━━━━`);
+          lines.push(`${dj} 🏀 ${d.gameName} ※出欠・詳細は別途ご案内`);
+          lines.push(`━━━━━━━━━━━━`);
+        } else if (d.type === 'holiday') {
+          lines.push(`${dj} お休み`);
+        } else {
+          lines.push(`${dj} ${(assignMap[d.date] || []).join('・')}`);
+        }
+      }
+      lines.push('');
+      lines.push('※ 都合が悪い場合は前日までにLINEで交代相手を見つけてください');
+
+      $('dutyOutputText').value = lines.join('\n');
+      $('dutyOutputSection').classList.add('show');
+
+      const w = $('dutyWarningArea');
+      if (shortage) {
+        w.style.display = '';
+        w.textContent = '⚠ 1日の当番数が保護者の人数を超えている日があります。当番数を減らすか保護者を増やしてください。';
+      } else { w.style.display = 'none'; }
+
+      renderTally(working, parents);
+      saveDutyInput();
+      $('dutyOutputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function formatMonthRange(from, to) {
+      const [fy, fm] = from.split('-').map(Number);
+      const [ty, tm] = to.split('-').map(Number);
+      if (fy === ty && fm === tm) return `${fy}年${fm}月`;
+      if (fy === ty) return `${fy}年${fm}〜${tm}月`;
+      return `${fy}年${fm}月〜${ty}年${tm}月`;
+    }
+
+    function renderTally(working, available) {
+      const max = Math.max(1, ...available.map(p => working[p] || 0));
+      const bars = available
+        .slice()
+        .sort((a, b) => (working[b] || 0) - (working[a] || 0))
+        .map(p => {
+          const c = working[p] || 0;
+          const width = Math.round((c / max) * 180);
+          return `<div class="tally-bar">
+            <span class="tally-name">${esc(p)}</span>
+            <span class="tally-count" style="width:${width}px;"></span>
+            <span class="tally-num">${c}回</span>
+          </div>`;
+        }).join('');
+      $('tallyBars').innerHTML = bars;
+    }
+
+    // 「この割り振りを履歴に記録」= 累計に確定加算
+    $('dutyConfirmBtn').addEventListener('click', () => {
+      if (!lastDutyAssignments) { alert('先に当番表を生成してください'); return; }
+      if (!confirm('この割り振りの担当回数を、シーズン累計に加算します。\n(次回の当番表作成時に、公平性の基準として使われます)\n\n記録しますか?')) return;
+      const tally = getTally();
+      for (const day of lastDutyAssignments.assignments) {
+        for (const person of day.people) {
+          if (person && person !== '(人手不足)') {
+            tally[person] = (tally[person] || 0) + 1;
+          }
+        }
+      }
+      setTally(tally);
+      // 記録後の累計を表示
+      const working = {};
+      lastDutyAssignments.available.forEach(p => { working[p] = tally[p] || 0; });
+      renderTally(working, lastDutyAssignments.available);
+      $('dutyCopyStatus').textContent = '✓ 累計に記録しました';
+      setTimeout(() => { $('dutyCopyStatus').textContent = ''; }, 3000);
+    });
+
+    $('clearDutyHistory').addEventListener('click', () => {
+      if (!confirm('担当回数のシーズン累計をすべてリセットします。\n(当番表そのものは消えません)\n\nリセットしますか?')) return;
+      localStorage.removeItem(TALLY_KEY);
+      $('tallyBars').innerHTML = '<div class="note">累計をリセットしました。</div>';
+    });
+
+    $('dutyGenerateBtn').addEventListener('click', generateDuty);
+    $('dutyCopyBtn').addEventListener('click', () => copyText($('dutyOutputText').value, $('dutyCopyStatus')));
+
+    /* ============================================================
+       イベント当番ロジック(v1.1・B-2 希望考慮+常駐フラグ)
+       ============================================================ */
+    const EVENT_KEY = 'hishoSpoEventInput';
+    const EVENT_TALLY_KEY = 'hishoSpoEventTally';
+
+    // デフォルト役割(実運用ベース:体育館/トイレ/ミーティングルーム/駐車場 + 汎用)
+    const DEFAULT_EROLES = [
+      { name: '体育館(設営準備)', num: 2, hold: false },
+      { name: 'トイレ(清掃・管理)', num: 1, hold: false },
+      { name: 'ミーティングルーム(荷物・食事)', num: 1, hold: true },
+      { name: '駐車場(誘導)', num: 2, hold: true },
+      { name: '受付', num: 1, hold: true },
+      { name: '片付け', num: 2, hold: false },
+    ];
+
+    function addEroleRow(name, num, hold) {
+      const row = document.createElement('div');
+      row.className = 'erole-row';
+      row.innerHTML = `
+        <input type="text" class="erole-name" placeholder="例:体育館" value="${esc(name)}">
+        <input type="number" class="erole-num" min="1" max="20" value="${num || 1}" aria-label="必要人数">
+        <label class="erole-hold"><input type="checkbox" class="erole-holdchk" ${hold ? 'checked' : ''}>常駐</label>
+        <button type="button" class="remove-row" onclick="removeErole(this)">×</button>
+      `;
+      $('eroleList').appendChild(row);
+    }
+    window.removeErole = function(btn) {
+      const rows = document.querySelectorAll('#eroleList .erole-row');
+      if (rows.length <= 1) {
+        const r = btn.closest('.erole-row');
+        r.querySelector('.erole-name').value = '';
+        return;
+      }
+      btn.closest('.erole-row').remove();
+    };
+    $('addEroleBtn').addEventListener('click', () => addEroleRow('', 1, false));
+
+    // イベント入力復元(なければデフォルト役割をセット)
+    (function restoreEvent() {
+      let restored = false;
+      try {
+        const d = JSON.parse(localStorage.getItem(EVENT_KEY) || '{}');
+        if (d.name) $('eventName').value = d.name;
+        if (d.venue) $('eventVenue').value = d.venue;
+        if (d.time) $('eventTime').value = d.time;
+        if (d.enote) $('eventNote').value = d.enote;
+        if (d.parents) $('eventParents').value = d.parents;
+        if (d.wishes) $('eventWishes').value = d.wishes;
+        if (Array.isArray(d.eroles) && d.eroles.length) {
+          d.eroles.forEach(r => addEroleRow(r.name || '', r.num || 1, !!r.hold));
+          restored = true;
+        }
+      } catch (e) {}
+      if (!restored) DEFAULT_EROLES.forEach(r => addEroleRow(r.name, r.num, r.hold));
+    })();
+
+    function getEventTally() {
+      try { return JSON.parse(localStorage.getItem(EVENT_TALLY_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function setEventTally(t) { localStorage.setItem(EVENT_TALLY_KEY, JSON.stringify(t)); }
+
+    let lastEventAssignments = null;
+
+    function parseWishes(raw) {
+      // "田中:体育館" / "高橋:常駐NG" / "鈴木:なんでも"
+      const map = {};       // name -> 希望役割キーワード
+      const holdNG = new Set();
+      raw.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
+        const idx = line.indexOf(':');
+        const idx2 = line.indexOf('：');
+        const sep = idx >= 0 ? idx : idx2;
+        if (sep < 0) return;
+        const name = line.slice(0, sep).trim();
+        const wish = line.slice(sep + 1).trim();
+        if (!name) return;
+        if (/常駐NG|常駐ng|常駐不可/.test(wish)) { holdNG.add(name); }
+        else if (/なんでも|どこでも|お任せ/.test(wish)) { /* 希望なし扱い */ }
+        else if (wish) { map[name] = wish; }
+      });
+      return { map, holdNG };
+    }
+
+    function generateEvent() {
+      const eventName = $('eventName').value.trim();
+      const eventDate = $('eventDate').value;
+      const eventVenue = $('eventVenue').value.trim();
+      const eventTime = $('eventTime').value;
+      const eventNote = $('eventNote').value.trim();
+      const parents = $('eventParents').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const eroles = [...document.querySelectorAll('#eroleList .erole-row')].map(r => ({
+        name: r.querySelector('.erole-name').value.trim(),
+        num: parseInt(r.querySelector('.erole-num').value, 10) || 1,
+        hold: r.querySelector('.erole-holdchk').checked,
+      })).filter(r => r.name);
+
+      if (!parents.length) { alert('当日来られる保護者を入力してください'); return; }
+      if (!eroles.length) { alert('役割を1つ以上入力してください'); return; }
+
+      const { map: wishMap, holdNG } = parseWishes($('eventWishes').value);
+      const tally = getEventTally();
+      const working = {};
+      parents.forEach(p => { working[p] = tally[p] || 0; });
+
+      const assigned = new Set();
+      const result = []; // {role, hold, people:[]}
+
+      // フェーズ1:希望のある人を、希望役割に優先配置
+      for (const role of eroles) {
+        const entry = { name: role.name, hold: role.hold, people: [] };
+        for (const p of parents) {
+          if (entry.people.length >= role.num) break;
+          if (assigned.has(p)) continue;
+          const wish = wishMap[p];
+          if (wish && role.name.includes(wish)) {
+            entry.people.push(p);
+            assigned.add(p);
+            working[p] += 1;
+          }
+        }
+        result.push(entry);
+      }
+
+      // フェーズ2:残りの役割枠を、担当回数の少ない人で埋める(常駐はholdNGを避ける)
+      for (const entry of result) {
+        const role = eroles.find(r => r.name === entry.name);
+        while (entry.people.length < role.num) {
+          let pool = parents.filter(p => !assigned.has(p));
+          if (entry.hold) {
+            const nonNG = pool.filter(p => !holdNG.has(p));
+            if (nonNG.length) pool = nonNG; // 常駐NGでない人を優先、いなければやむを得ず
+          }
+          if (!pool.length) break; // 人手不足
+          pool.sort((a, b) => (working[a] - working[b]) || a.localeCompare(b));
+          const chosen = pool[0];
+          entry.people.push(chosen);
+          assigned.add(chosen);
+          working[chosen] += 1;
+        }
+      }
+
+      // 余った人 = サポート
+      const support = parents.filter(p => !assigned.has(p));
+
+      lastEventAssignments = { assignments: result, parents, working };
+
+      // テキスト整形:開催案内 + 役割分担を1枚に
+      const lines = [];
+      lines.push(`【${eventName || 'イベント'} 開催のお知らせ】`);
+      const dtLine = [eventDate ? formatDateJP(eventDate) : '', eventTime ? eventTime + '集合' : ''].filter(Boolean).join(' ');
+      if (dtLine) lines.push(`📅 ${dtLine}`);
+      if (eventVenue) lines.push(`📍 ${eventVenue}`);
+      if (eventNote) lines.push(eventNote);
+      lines.push('');
+      lines.push('▼ 当日の役割分担');
+      for (const entry of result) {
+        const holdMark = entry.hold ? '(常駐)' : '';
+        const names = entry.people.length ? entry.people.join('・') : '(未定)';
+        lines.push(`■ ${entry.name}${holdMark}(${entry.people.length}/${eroles.find(r=>r.name===entry.name).num}名):${names}`);
+      }
+      if (support.length) {
+        lines.push('');
+        lines.push(`サポート(手が空いた方):${support.join('・')}`);
+      }
+      lines.push('');
+      lines.push('※ 交代希望は前日までにLINEへ');
+
+      $('eventOutputText').value = lines.join('\n');
+      $('eventOutputSection').classList.add('show');
+
+      // 人手不足の警告
+      const shortage = result.some(e => e.people.length < eroles.find(r=>r.name===e.name).num);
+      const w = $('eventWarningArea');
+      if (shortage) {
+        w.style.display = '';
+        w.textContent = '⚠ 必要人数に対して保護者が足りない役割があります。人数を増やすか、必要人数を減らしてください。';
+      } else { w.style.display = 'none'; }
+
+      renderEventTally(working, parents);
+
+      // 入力保存
+      localStorage.setItem(EVENT_KEY, JSON.stringify({
+        name: eventName,
+        venue: eventVenue,
+        time: eventTime,
+        enote: eventNote,
+        parents: $('eventParents').value,
+        wishes: $('eventWishes').value,
+        eroles,
+      }));
+      $('eventOutputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderEventTally(working, parents) {
+      const max = Math.max(1, ...parents.map(p => working[p] || 0));
+      $('eventTallyBars').innerHTML = parents.slice()
+        .sort((a, b) => (working[b] || 0) - (working[a] || 0))
+        .map(p => {
+          const c = working[p] || 0;
+          const width = Math.round((c / max) * 180);
+          return `<div class="tally-bar"><span class="tally-name">${esc(p)}</span><span class="tally-count" style="width:${width}px;"></span><span class="tally-num">${c}回</span></div>`;
+        }).join('');
+    }
+
+    $('eventConfirmBtn').addEventListener('click', () => {
+      if (!lastEventAssignments) { alert('先に役割分担表を生成してください'); return; }
+      if (!confirm('この割り振りの担当回数を累計に加算します。\n次回のイベント当番で公平性の基準になります。\n\n記録しますか?')) return;
+      const tally = getEventTally();
+      for (const entry of lastEventAssignments.assignments) {
+        for (const p of entry.people) tally[p] = (tally[p] || 0) + 1;
+      }
+      setEventTally(tally);
+      const working = {};
+      lastEventAssignments.parents.forEach(p => { working[p] = tally[p] || 0; });
+      renderEventTally(working, lastEventAssignments.parents);
+      $('eventCopyStatus').textContent = '✓ 累計に記録しました';
+      setTimeout(() => { $('eventCopyStatus').textContent = ''; }, 3000);
+    });
+
+    $('clearEventHistory').addEventListener('click', () => {
+      if (!confirm('イベント役割の担当回数累計をリセットします。よろしいですか?')) return;
+      localStorage.removeItem(EVENT_TALLY_KEY);
+      $('eventTallyBars').innerHTML = '<div class="note">累計をリセットしました。</div>';
+    });
+
+    $('eventGenerateBtn').addEventListener('click', generateEvent);
+    $('eventCopyBtn').addEventListener('click', () => copyText($('eventOutputText').value, $('eventCopyStatus')));
+
+    /* ============================================================
+       共通ユーティリティ
+       ============================================================ */
     function formatDateJP(yyyymmdd) {
       const [y, m, d] = yyyymmdd.split('-');
       const date = new Date(Number(y), Number(m) - 1, Number(d));
@@ -297,30 +1003,25 @@
       return `${Number(m)}月${Number(d)}日(${wd})`;
     }
 
-    $('generateBtn').addEventListener('click', generate);
-
-    // ----- コピー -----
-    $('copyBtn').addEventListener('click', async () => {
-      const text = $('outputText').value;
+    async function copyText(text, statusEl) {
       if (!text) return;
       try {
         await navigator.clipboard.writeText(text);
-        $('copyStatus').textContent = '✓ コピーしました。LINEに貼り付けてください';
-        setTimeout(() => { $('copyStatus').textContent = ''; }, 3000);
+        statusEl.textContent = '✓ コピーしました。LINEに貼り付けてください';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
       } catch (e) {
-        // フォールバック:textareaを選択してコピー
-        $('outputText').select();
-        document.execCommand('copy');
-        $('copyStatus').textContent = '✓ コピーしました(手動方式)';
-        setTimeout(() => { $('copyStatus').textContent = ''; }, 3000);
+        statusEl.textContent = 'コピーに失敗しました。手動で選択してください';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
       }
-    });
+    }
 
-    // ----- これ何?(免責&趣旨) -----
     $('openAbout').addEventListener('click', () => {
       alert(
-        '【秘書ノート 番外編 / スポ少 配車割ジェネレータ】\n\n' +
+        '【秘書ノート 番外編 / スポ少サポートツール】\n\n' +
         '娘のミニバス活動で「代表って時間ある人がやるけど、本当は時間ない人ほどツールが必要」と気づいて作りました。売り物ではなく作ってみたシリーズです。\n\n' +
+        '・🚗 校外試合(配車):遠征の集合案内+配車割を自動生成\n' +
+        '・📋 練習当番:期間+曜日で月間の当番を公平ローテ\n' +
+        '・🏫 自校試合(設営):開催案内+会場設営など役割分担(希望・常駐考慮)\n\n' +
         '・入力した情報は外部に送信されません(localStorage完結)\n' +
         '・APIキー不要・登録不要・課金なし\n' +
         '・問い合わせ対応は行っていません(Issue報告は歓迎)\n' +
@@ -328,10 +1029,6 @@
         'MITライセンス / 秘書ノート シリーズの一部です'
       );
     });
-
-    function esc(s) {
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
   </script>
 </body>
 </html>
