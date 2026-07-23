@@ -248,7 +248,7 @@
           <div class="game-list" id="gameList">
             <div class="game-row">
               <input type="date" class="game-date" aria-label="試合日">
-              <input type="text" class="game-name" placeholder="例:○○カップ">
+              <input type="text" class="game-name" placeholder="試合名のみ(例:○○カップ)">
               <button type="button" class="remove-row" onclick="removeGame(this)">×</button>
             </div>
           </div>
@@ -531,7 +531,7 @@
       row.className = 'game-row';
       row.innerHTML = `
         <input type="date" class="game-date" value="${esc(date)}" aria-label="試合日">
-        <input type="text" class="game-name" placeholder="例:○○カップ" value="${esc(name)}">
+        <input type="text" class="game-name" placeholder="試合名のみ(例:○○カップ)" value="${esc(name)}">
         <button type="button" class="remove-row" onclick="removeGame(this)">×</button>
       `;
       $('gameList').appendChild(row);
