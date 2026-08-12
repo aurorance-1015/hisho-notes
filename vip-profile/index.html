@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / VIPプロファイル管理</title>
+<style>
+  :root { --crimson: #c41e3a; --crimson-dark: #a31830; --navy: #1f2d3d; --soft-cream: #fffbea; --danger: #d0021b; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand { color: #888; font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem; }
+  .helper-banner { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.9rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; line-height: 1.6; }
+
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 4px; }
+  .btn-primary { background: var(--crimson); color: white; padding: 0.6rem 1.3rem; font-size: 1rem; }
+  .btn-primary:hover { background: var(--crimson-dark); }
+  .btn-sub { background: #777; color: white; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-sub:hover { background: #555; }
+  .btn-danger { background: #d35d5d; color: white; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-danger:hover { background: #b54545; }
+  .btn-ghost { background: transparent; color: var(--crimson); border: 1px solid var(--crimson); padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+  .btn-ghost:hover { background: var(--crimson); color: white; }
+  label { display: block; font-size: 0.82rem; margin-bottom: 0.25rem; color: #666; font-weight: 600; }
+  input, select, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; font-family: inherit; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* リマインド */
+  .reminder { background: #fff4ea; border: 1px solid #f0c088; border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+  .reminder h3 { margin: 0 0 0.4rem; font-size: 0.95rem; color: #b76300; }
+  .reminder ul { margin: 0; padding-left: 1.2rem; }
+  .reminder li { margin: 0.15rem 0; }
+
+  /* ツールバー */
+  .toolbar { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .toolbar .search { flex: 1; min-width: 180px; }
+  .toolbar select { width: auto; }
+
+  /* 一覧 */
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+  .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1rem 1.2rem; cursor: pointer; transition: all 0.15s; border-left: 4px solid transparent; }
+  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.13); transform: translateY(-1px); border-left-color: var(--crimson); }
+  .card .c-name { font-size: 1.1rem; font-weight: bold; color: var(--navy); }
+  .card .c-company { font-size: 0.85rem; color: #666; margin-top: 0.15rem; }
+  .card .c-tags { margin-top: 0.5rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .tag { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 10px; background: #eee; color: #555; }
+  .tag.important { background: #ffe0e0; color: #c0392b; }
+  .tag.warn { background: #fff0d0; color: #b7791f; }
+  .allergy-badge { display: inline-block; background: var(--danger); color: white; font-size: 0.72rem; font-weight: bold; padding: 0.12rem 0.5rem; border-radius: 3px; margin-top: 0.5rem; }
+  .empty { text-align: center; color: #999; padding: 3rem 1rem; grid-column: 1/-1; }
+
+  /* モーダル */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 100; padding: 2rem 1rem; overflow-y: auto; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 8px; max-width: 640px; width: 100%; padding: 1.5rem 1.8rem; box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+  .modal h2 { margin-top: 0; font-size: 1.2rem; color: var(--navy); }
+  .fieldset { border: 1px solid #eee; border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 0.9rem; }
+  .fieldset legend { font-size: 0.85rem; font-weight: bold; color: var(--crimson); padding: 0 0.4rem; }
+  .fieldset.danger-fs { border-color: #f0b0b0; background: #fff8f8; }
+  .row2 { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .row2 > * { flex: 1; min-width: 130px; }
+  .field-block { margin-bottom: 0.6rem; }
+  .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
+  .modal-actions .left { margin-right: auto; }
+
+  /* 贈答履歴 */
+  .gift-row { display: flex; gap: 0.4rem; margin-bottom: 0.4rem; flex-wrap: wrap; align-items: center; }
+  .gift-row input { flex: 1; min-width: 90px; }
+  .gift-row .g-date { flex: 0; min-width: 140px; }
+  .remove-gift { background: #ddd; color: #555; padding: 0.35rem 0.6rem; font-size: 0.8rem; }
+
+  /* 詳細ビュー */
+  .detail-block { margin-bottom: 1rem; }
+  .detail-block h3 { font-size: 0.85rem; color: var(--crimson); border-bottom: 1px solid #eee; padding-bottom: 0.2rem; margin: 0 0 0.4rem; }
+  .detail-row { display: flex; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .detail-label { width: 130px; color: #888; flex-shrink: 0; }
+  .detail-value { flex: 1; white-space: pre-wrap; }
+  .detail-allergy { background: #fff0f0; border: 1px solid var(--danger); border-radius: 6px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; }
+  .detail-allergy .da-label { color: var(--danger); font-weight: bold; font-size: 0.85rem; }
+  .gift-history-item { font-size: 0.88rem; padding: 0.3rem 0; border-bottom: 1px dotted #eee; }
+
+  .note { font-size: 0.8rem; color: #888; margin-top: 0.4rem; line-height: 1.5; }
+  .privacy-box { background: #fff8f8; border: 1px solid #f0c0c0; border-radius: 8px; padding: 0.9rem 1.1rem; font-size: 0.83rem; color: #555; line-height: 1.7; margin-top: 1.5rem; }
+  .privacy-box strong { color: var(--danger); }
+
+  footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; }
+  footer a, footer .link-btn { color: #888; text-decoration: underline; background: none; border: none; cursor: pointer; font: inherit; padding: 0; }
+
+  @media print {
+    body { margin: 0; max-width: none; }
+    .helper-banner, .reminder, .toolbar, .list, footer, .privacy-box, #addBtn { display: none !important; }
+    .modal-overlay { position: static; background: none; display: block; padding: 0; }
+    .modal { box-shadow: none; max-width: none; }
+    .modal-actions { display: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>VIPプロファイル管理</h1>
+  <div class="subcopy">役員秘書・経営者・士業のための業務ツール集 ― シリーズ旗艦</div>
+
+  <div class="helper-banner">
+    👤 役員・取引先・重要顧客の「好み・NG・記念日・贈答履歴・関係性」を1か所に。<br>
+    <strong>秘書が変わっても、組織に情報が残る</strong>。エクスポートしたデータは、そのまま引き継ぎ資料になります。
+    🔒 すべてブラウザ内に保存(外部送信ゼロ)。機微な個人情報を扱うため、共有PCではご注意ください。
+  </div>
+
+  <div class="reminder" id="reminderArea" style="display:none;">
+    <h3>🎂 近づいている記念日</h3>
+    <ul id="reminderList"></ul>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" class="search" id="searchInput" placeholder="🔍 氏名・会社・役職で検索">
+    <select id="filterCategory">
+      <option value="">全分類</option>
+      <option value="取引先">取引先</option>
+      <option value="役員">役員</option>
+      <option value="顧客">顧客</option>
+      <option value="来賓">来賓</option>
+      <option value="その他">その他</option>
+    </select>
+    <button class="btn-primary" id="addBtn">＋ 新規登録</button>
+  </div>
+
+  <div class="list" id="listArea"></div>
+
+  <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+    <button class="btn-ghost" id="exportBtn">📤 全データをエクスポート(引き継ぎ用JSON)</button>
+    <button class="btn-ghost" id="importBtn">📥 インポート</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;">
+    <span class="note" id="dataCount"></span>
+  </div>
+
+  <div class="privacy-box">
+    <strong>🔒 このツールが扱うのは、極めて機微な個人情報です。</strong><br>
+    ・入力したすべての情報は、お使いのブラウザ内(localStorage)にのみ保存され、外部には一切送信されません。<br>
+    ・<strong>共有PC・貸出PCでは絶対に使わないでください。</strong>使う場合は必ずご自身のPC、またはブラウザのプライベートモードで。<br>
+    ・エクスポートしたJSONファイルには全情報が含まれます。パスワード付きフォルダで保管するなど、取り扱いにご注意ください。<br>
+    ・退席時は画面ロックを。第三者に見られると問題になる情報が含まれます。
+  </div>
+
+  <!-- 編集モーダル -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <h2 id="editTitle">新規登録</h2>
+
+      <fieldset class="fieldset">
+        <legend>基本情報</legend>
+        <div class="row2">
+          <div class="field-block"><label>氏名 ※必須</label><input type="text" id="f-name"></div>
+          <div class="field-block"><label>ふりがな</label><input type="text" id="f-kana"></div>
+        </div>
+        <div class="row2">
+          <div class="field-block"><label>会社・団体</label><input type="text" id="f-company"></div>
+          <div class="field-block"><label>役職</label><input type="text" id="f-title"></div>
+        </div>
+        <div class="row2">
+          <div class="field-block"><label>分類</label>
+            <select id="f-category">
+              <option value="取引先">取引先</option>
+              <option value="役員">役員</option>
+              <option value="顧客">顧客</option>
+              <option value="来賓">来賓</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div class="field-block"><label>電話</label><input type="text" id="f-phone"></div>
+          <div class="field-block"><label>メール</label><input type="text" id="f-email"></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset danger-fs">
+        <legend>好み・NG(安全に直結)</legend>
+        <div class="field-block"><label>好きなもの(食べ物・お酒・趣味など)</label><textarea id="f-likes" placeholder="例:日本酒(辛口)、ゴルフ、寿司"></textarea></div>
+        <div class="field-block"><label>⚠️ NG・アレルギー(食材・苦手なこと)</label><textarea id="f-allergy" placeholder="例:甲殻類アレルギー、生もの苦手、タバコNG"></textarea></div>
+        <div class="field-block"><label>タブー(触れてはいけない話題)</label><textarea id="f-taboo" placeholder="例:前職の話、ご家族の話題"></textarea></div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>関係性</legend>
+        <div class="field-block"><label>出会いのきっかけ・接点</label><input type="text" id="f-origin" placeholder="例:●●会長のご紹介、△△セミナーで名刺交換"></div>
+        <div class="field-block"><label>付き合いの経緯・長さ</label><textarea id="f-history" placeholder="例:2010年から取引、先代からの付き合い"></textarea></div>
+        <div class="row2">
+          <div class="field-block"><label>紹介者</label><input type="text" id="f-introducer" placeholder="例:●●会長"></div>
+          <div class="field-block"><label>決裁権・影響力メモ</label><input type="text" id="f-power" placeholder="例:最終決裁者、社内の実力者"></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>記念日・年中行事</legend>
+        <div class="row2">
+          <div class="field-block"><label>誕生日(月日)</label>
+            <div style="display:flex; gap:0.4rem; align-items:center;">
+              <select id="f-birthday-m" style="flex:1;"><option value="">─ 月 ─</option></select>
+              <select id="f-birthday-d" style="flex:1;"><option value="">─ 日 ─</option></select>
+            </div>
+          </div>
+          <div class="field-block"><label>その他記念日</label><input type="text" id="f-anniv" placeholder="例:創立記念 6月、就任 4月"></div>
+        </div>
+        <div class="field-block"><label>お中元・お歳暮</label>
+          <select id="f-gift-policy">
+            <option value="">―</option>
+            <option value="両方送る">お中元・お歳暮 両方送る</option>
+            <option value="お歳暮のみ">お歳暮のみ</option>
+            <option value="お中元のみ">お中元のみ</option>
+            <option value="送らない">送らない</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>贈答・接待履歴</legend>
+        <div id="giftList"></div>
+        <button type="button" class="btn-sub" id="addGiftBtn" style="margin-top:0.3rem;">＋ 履歴を追加</button>
+        <div class="note">「前回●●だったから今回は変える」の判断材料に。日付・品目/店・金額帯・反応。</div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>自由メモ・タグ</legend>
+        <div class="field-block"><label>引き継ぎメモ(自由)</label><textarea id="f-memo"></textarea></div>
+        <div class="field-block"><label>タグ(カンマ区切り)</label><input type="text" id="f-tags" placeholder="例:重要,要注意,VIP"></div>
+      </fieldset>
+
+      <div class="modal-actions">
+        <button class="btn-danger left" id="deleteBtn" style="display:none;">削除</button>
+        <button class="btn-sub" id="cancelEditBtn">キャンセル</button>
+        <button class="btn-primary" id="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 詳細ビューモーダル -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" id="detailContent"></div>
+  </div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">業務効率化ツールのカスタマイズ・運用代行・秘書業務BPOのご相談 → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    const DKEY = 'hishoVipProfiles';
+    const SCHEMA_VERSION = 1;
+
+    function getProfiles() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(DKEY) || '{}');
+        return Array.isArray(raw.profiles) ? raw.profiles : [];
+      } catch (e) { return []; }
+    }
+    function saveProfiles(profiles) {
+      localStorage.setItem(DKEY, JSON.stringify({ version: SCHEMA_VERSION, profiles }));
+    }
+
+    let editingId = null;
+
+    // ---- 誕生日プルダウン初期化 ----
+    (function initBirthdaySelects() {
+      const mSel = $('f-birthday-m'), dSel = $('f-birthday-d');
+      for (let m = 1; m <= 12; m++) mSel.insertAdjacentHTML('beforeend', `<option value="${m}">${m}月</option>`);
+      for (let d = 1; d <= 31; d++) dSel.insertAdjacentHTML('beforeend', `<option value="${d}">${d}日</option>`);
+    })();
+    function setBirthdaySelects(str) {
+      const md = parseMonthDay(str);
+      $('f-birthday-m').value = md ? String(md.m) : '';
+      $('f-birthday-d').value = md ? String(md.d) : '';
+    }
+    function getBirthdayValue() {
+      const m = $('f-birthday-m').value, d = $('f-birthday-d').value;
+      if (!m || !d) return '';
+      return `${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+
+    // ---- 贈答履歴行 ----
+    function addGiftRow(g) {
+      g = g || {};
+      const row = document.createElement('div');
+      row.className = 'gift-row';
+      row.innerHTML = `
+        <input type="text" class="g-date" placeholder="日付(例:2025-12)" value="${esc(g.date)}">
+        <input type="text" class="g-item" placeholder="品目・店" value="${esc(g.item)}">
+        <input type="text" class="g-price" placeholder="金額帯" value="${esc(g.price)}" style="max-width:110px;">
+        <input type="text" class="g-reaction" placeholder="反応" value="${esc(g.reaction)}">
+        <button type="button" class="remove-gift" onclick="this.closest('.gift-row').remove()">×</button>
+      `;
+      $('giftList').appendChild(row);
+    }
+    $('addGiftBtn').addEventListener('click', () => addGiftRow());
+
+    // ---- モーダル開閉 ----
+    function openEdit(profile) {
+      editingId = profile ? profile.id : null;
+      $('editTitle').textContent = profile ? 'プロファイルを編集' : '新規登録';
+      $('deleteBtn').style.display = profile ? '' : 'none';
+
+      const p = profile || {};
+      $('f-name').value = p.name || '';
+      $('f-kana').value = p.kana || '';
+      $('f-company').value = p.company || '';
+      $('f-title').value = p.title || '';
+      $('f-category').value = p.category || '取引先';
+      $('f-phone').value = p.phone || '';
+      $('f-email').value = p.email || '';
+      $('f-likes').value = p.likes || '';
+      $('f-allergy').value = p.allergy || '';
+      $('f-taboo').value = p.taboo || '';
+      $('f-origin').value = p.origin || '';
+      $('f-history').value = p.history || '';
+      $('f-introducer').value = p.introducer || '';
+      $('f-power').value = p.power || '';
+      setBirthdaySelects(p.birthday || '');
+      $('f-anniv').value = p.anniv || '';
+      $('f-gift-policy').value = p.giftPolicy || '';
+      $('f-memo').value = p.memo || '';
+      $('f-tags').value = (p.tags || []).join(',');
+
+      $('giftList').innerHTML = '';
+      (p.gifts || []).forEach(g => addGiftRow(g));
+
+      $('editModal').classList.add('show');
+    }
+    function closeEdit() { $('editModal').classList.remove('show'); }
+
+    $('addBtn').addEventListener('click', () => openEdit(null));
+    $('cancelEditBtn').addEventListener('click', closeEdit);
+
+    // ---- 保存 ----
+    $('saveBtn').addEventListener('click', () => {
+      const name = $('f-name').value.trim();
+      if (!name) { alert('氏名は必須です'); return; }
+
+      const gifts = [...document.querySelectorAll('#giftList .gift-row')].map(r => ({
+        date: r.querySelector('.g-date').value.trim(),
+        item: r.querySelector('.g-item').value.trim(),
+        price: r.querySelector('.g-price').value.trim(),
+        reaction: r.querySelector('.g-reaction').value.trim(),
+      })).filter(g => g.date || g.item || g.price || g.reaction);
+
+      const tags = $('f-tags').value.split(/[,、]/).map(s => s.trim()).filter(Boolean);
+
+      const profile = {
+        id: editingId || ('vip-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
+        name, kana: $('f-kana').value.trim(),
+        company: $('f-company').value.trim(), title: $('f-title').value.trim(),
+        category: $('f-category').value, phone: $('f-phone').value.trim(), email: $('f-email').value.trim(),
+        likes: $('f-likes').value.trim(), allergy: $('f-allergy').value.trim(), taboo: $('f-taboo').value.trim(),
+        origin: $('f-origin').value.trim(), history: $('f-history').value.trim(),
+        introducer: $('f-introducer').value.trim(), power: $('f-power').value.trim(),
+        birthday: getBirthdayValue(), anniv: $('f-anniv').value.trim(),
+        giftPolicy: $('f-gift-policy').value, gifts,
+        memo: $('f-memo').value.trim(), tags,
+        updatedAt: new Date().toISOString(),
+      };
+
+      let profiles = getProfiles();
+      if (editingId) {
+        profiles = profiles.map(x => x.id === editingId ? profile : x);
+      } else {
+        profiles.unshift(profile);
+      }
+      saveProfiles(profiles);
+      closeEdit();
+      render();
+    });
+
+    // ---- 削除 ----
+    $('deleteBtn').addEventListener('click', () => {
+      if (!editingId) return;
+      const p = getProfiles().find(x => x.id === editingId);
+      if (!confirm(`「${p ? p.name : ''}」を削除します。この操作は取り消せません。\n\n削除しますか?`)) return;
+      saveProfiles(getProfiles().filter(x => x.id !== editingId));
+      closeEdit();
+      render();
+    });
+
+    // ---- 詳細ビュー ----
+    function openDetail(profile) {
+      const p = profile;
+      const rows = [];
+      function block(title, inner) { if (inner) rows.push(`<div class="detail-block"><h3>${title}</h3>${inner}</div>`); }
+      function line(label, val) { return val ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${esc(val)}</span></div>` : ''; }
+
+      let basic = line('会社・団体', p.company) + line('役職', p.title) + line('分類', p.category) + line('電話', p.phone) + line('メール', p.email);
+      block('基本情報', basic);
+
+      if (p.allergy) {
+        rows.push(`<div class="detail-allergy"><span class="da-label">⚠️ NG・アレルギー</span><div class="detail-value">${esc(p.allergy)}</div></div>`);
+      }
+      let pref = line('好きなもの', p.likes) + line('タブー', p.taboo);
+      block('好み', pref);
+
+      let rel = line('出会い・接点', p.origin) + line('経緯・長さ', p.history) + line('紹介者', p.introducer) + line('決裁権・影響力', p.power);
+      block('関係性', rel);
+
+      let anni = line('誕生日', formatBirthdayJP(p.birthday)) + line('その他記念日', p.anniv) + line('お中元・お歳暮', p.giftPolicy);
+      block('記念日・年中行事', anni);
+
+      if (p.gifts && p.gifts.length) {
+        const gi = p.gifts.map(g => `<div class="gift-history-item">${esc([g.date, g.item, g.price, g.reaction].filter(Boolean).join(' / '))}</div>`).join('');
+        block('贈答・接待履歴', gi);
+      }
+      block('引き継ぎメモ', p.memo ? `<div class="detail-value">${esc(p.memo)}</div>` : '');
+
+      const tagsHtml = (p.tags || []).map(t => `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join(' ');
+
+      $('detailContent').innerHTML = `
+        <h2>${esc(p.name)} ${p.kana ? `<span style="font-size:0.7em;color:#999;">(${esc(p.kana)})</span>` : ''}</h2>
+        <div style="margin-bottom:0.8rem;">${tagsHtml}</div>
+        ${rows.join('')}
+        <div class="modal-actions">
+          <button class="btn-sub left" onclick="window.print()">🖨 印刷</button>
+          <button class="btn-sub" id="closeDetailBtn">閉じる</button>
+          <button class="btn-primary" id="editFromDetailBtn">編集</button>
+        </div>
+      `;
+      $('closeDetailBtn').addEventListener('click', () => $('detailModal').classList.remove('show'));
+      $('editFromDetailBtn').addEventListener('click', () => {
+        $('detailModal').classList.remove('show');
+        openEdit(p);
+      });
+      $('detailModal').classList.add('show');
+    }
+
+    function tagClass(t) {
+      if (/重要|VIP/.test(t)) return 'important';
+      if (/注意|要/.test(t)) return 'warn';
+      return '';
+    }
+
+    // ---- 一覧描画 ----
+    function render() {
+      const profiles = getProfiles();
+      const q = $('searchInput').value.trim().toLowerCase();
+      const cat = $('filterCategory').value;
+
+      let filtered = profiles.filter(p => {
+        if (cat && p.category !== cat) return false;
+        if (q) {
+          const hay = [p.name, p.kana, p.company, p.title].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const list = $('listArea');
+      if (!profiles.length) {
+        list.innerHTML = '<div class="empty">まだ登録がありません。「＋ 新規登録」から始めてください。</div>';
+      } else if (!filtered.length) {
+        list.innerHTML = '<div class="empty">条件に合う人が見つかりません。</div>';
+      } else {
+        list.innerHTML = filtered.map(p => {
+          const tags = (p.tags || []).map(t => `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join('');
+          const allergy = p.allergy ? `<div class="allergy-badge">⚠️ ${esc(p.allergy.slice(0, 30))}${p.allergy.length > 30 ? '…' : ''}</div>` : '';
+          return `<div class="card" data-id="${p.id}">
+            <div class="c-name">${esc(p.name)}</div>
+            <div class="c-company">${esc([p.company, p.title].filter(Boolean).join(' / '))}</div>
+            ${allergy}
+            <div class="c-tags">${tags}</div>
+          </div>`;
+        }).join('');
+      }
+      $('dataCount').textContent = `登録 ${profiles.length}件`;
+      renderReminders(profiles);
+    }
+
+    $('listArea').addEventListener('click', e => {
+      const card = e.target.closest('.card');
+      if (!card) return;
+      const p = getProfiles().find(x => x.id === card.dataset.id);
+      if (p) openDetail(p);
+    });
+
+    $('searchInput').addEventListener('input', render);
+    $('filterCategory').addEventListener('change', render);
+
+    // ---- 記念日リマインド ----
+    function renderReminders(profiles) {
+      const today = new Date();
+      const soon = [];
+      profiles.forEach(p => {
+        const md = parseMonthDay(p.birthday);
+        if (md) {
+          const days = daysUntil(today, md.m, md.d);
+          if (days >= 0 && days <= 30) soon.push({ name: p.company ? `${p.name}(${p.company})` : p.name, label: `誕生日`, days, when: `${md.m}月${md.d}日` });
+        }
+      });
+      soon.sort((a, b) => a.days - b.days);
+      if (soon.length) {
+        $('reminderArea').style.display = '';
+        $('reminderList').innerHTML = soon.map(s =>
+          `<li><strong>${esc(s.name)}</strong> ─ ${s.label}(${s.when}) あと ${s.days} 日</li>`
+        ).join('');
+      } else {
+        $('reminderArea').style.display = 'none';
+      }
+    }
+    function formatBirthdayJP(str) {
+      const md = parseMonthDay(str);
+      return md ? `${md.m}月${md.d}日` : (str || '');
+    }
+    function parseMonthDay(str) {
+      if (!str) return null;
+      let m = str.match(/(\d{1,2})[-\/月](\d{1,2})/);
+      if (m) return { m: Number(m[1]), d: Number(m[2]) };
+      return null;
+    }
+    function daysUntil(today, month, day) {
+      const y = today.getFullYear();
+      let target = new Date(y, month - 1, day);
+      target.setHours(0,0,0,0);
+      const t0 = new Date(today); t0.setHours(0,0,0,0);
+      if (target < t0) target = new Date(y + 1, month - 1, day);
+      return Math.round((target - t0) / 86400000);
+    }
+
+    // ---- エクスポート/インポート ----
+    $('exportBtn').addEventListener('click', () => {
+      const data = { version: SCHEMA_VERSION, exportedAt: new Date().toISOString(), profiles: getProfiles() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `hisho-vip-profiles-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    $('importBtn').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          const incoming = Array.isArray(data.profiles) ? data.profiles : [];
+          if (!incoming.length) { alert('プロファイルが見つかりませんでした。'); return; }
+          const mode = confirm(`${incoming.length}件のプロファイルをインポートします。\n\n「OK」= 既存に追加(統合)\n「キャンセル」= 中止`);
+          if (!mode) { e.target.value = ''; return; }
+          const existing = getProfiles();
+          const byId = {};
+          existing.forEach(p => { byId[p.id] = p; });
+          incoming.forEach(p => { if (p && p.id) byId[p.id] = p; else if (p) { p.id = 'vip-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); byId[p.id] = p; } });
+          saveProfiles(Object.values(byId));
+          render();
+          alert('インポート完了しました。');
+        } catch (err) {
+          alert('インポートに失敗しました:' + err.message);
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+
+    // ---- 免責 ----
+    $('openDisclaimer').addEventListener('click', () => {
+      alert('本ツールは無償で提供されるサンプル実装です。\n\n入力したすべての情報(氏名・好み・アレルギー・関係性・贈答履歴等)は、お使いのブラウザ(localStorage)にのみ保存され、外部には一切送信されません。\n\n極めて機微な個人情報を扱うため、共有PCでの使用は避け、エクスポートJSONの取り扱いには十分ご注意ください。\n\n本ツール利用に起因する一切の損害について作者は責任を負いません。MITライセンス。');
+    });
+
+    // モーダル背景クリックで閉じる
+    $('editModal').addEventListener('click', e => { if (e.target === $('editModal')) closeEdit(); });
+    $('detailModal').addEventListener('click', e => { if (e.target === $('detailModal')) $('detailModal').classList.remove('show'); });
+
+    render();
+  </script>
+</body>
+</html>
