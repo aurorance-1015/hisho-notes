@@ -88,6 +88,25 @@
   .game-row .game-date { flex: 1.3; }
   .game-row .game-name { flex: 2; }
 
+  /* 月謝・集金 */
+  .fam-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .fam-row .fam-name { flex: 2; }
+  .fam-row .fam-kids { flex: 0; width: 90px; }
+  .balance-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .balance-table th, .balance-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; text-align: left; }
+  .balance-table th { color: #888; font-weight: 600; font-size: 0.8rem; }
+  .balance-table td.amount { text-align: right; font-weight: bold; }
+  .bal-warn { color: #b76300; }
+  .bal-danger { color: #d0021b; }
+  .bal-ok { color: #2e7d32; }
+  .tx-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 0.3rem 0; border-bottom: 1px dotted #eee; gap: 0.5rem; }
+  .tx-item .tx-del { background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.85rem; }
+  .tx-item .tx-del:hover { color: var(--crimson); }
+  .tx-in { color: #2e7d32; }
+  .tx-out { color: #d0021b; }
+  .bulk-check { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; font-weight: normal; color: #555; }
+  .bulk-check input { width: auto; }
+
   footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; line-height: 1.6; }
   footer a, footer button.link { color: #888; text-decoration: underline; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
   footer a:hover, footer button.link:hover { color: #555; }
@@ -115,6 +134,7 @@
     <button type="button" class="tab active" data-tab="carpool">🚗 校外試合(配車)</button>
     <button type="button" class="tab" data-tab="daily">📋 練習当番</button>
     <button type="button" class="tab" data-tab="event">🏫 自校試合(設営)</button>
+    <button type="button" class="tab" data-tab="depo">💰 月謝・集金</button>
   </div>
 
   <!-- ============ 校外試合(配車)タブ ============ -->
@@ -351,6 +371,81 @@
           </div>
         </div>
         <div class="note">生成結果・累計はこのブラウザ内のみ(localStorage)。サーバには一切送信していません。</div>
+      </div>
+  </div>
+
+  <!-- ============ 月謝・集金(デポジット)タブ ============ -->
+  <div class="tab-panel" id="tab-depo">
+      <div class="submode-desc">デポジット式の集金管理。最初にまとまった額(例:5,000円)を預かり、月謝や参加費は<strong>残高から差引</strong>。都度の現金回収・立替・両替をなくします。残高は<strong>取引履歴から自動計算</strong>されるので、記録がすべて残ります。</div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>家庭リスト(姓・子どもの人数)</label>
+          <div id="famList"></div>
+          <button type="button" class="add-row" id="addFamBtn">＋ 家庭を追加</button>
+          <div class="note">兄弟姉妹がいる家庭は人数を設定すると、一括差引で「人数分」を選べます。</div>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>💴 記録を追加(入金・個別差引)</label>
+          <div class="row" style="margin-bottom:0.4rem;">
+            <select id="txFam" style="flex:1.2;"></select>
+            <select id="txType" style="flex:1;">
+              <option value="in">入金(お預かり)</option>
+              <option value="out">差引(個別)</option>
+            </select>
+            <input type="number" id="txAmount" placeholder="金額" value="5000" style="flex:1;">
+          </div>
+          <div class="row">
+            <input type="text" id="txLabel" placeholder="名目(例:お預かり、ゼッケン代)" style="flex:2;">
+            <input type="date" id="txDate" style="flex:1;">
+            <button type="button" class="add-row" id="txAddBtn" style="background:var(--crimson);">記録する</button>
+          </div>
+        </div>
+
+        <div class="form-block" style="border-top:1px dashed #ddd; padding-top:0.8rem;">
+          <label>➖ 一括差引(月謝・大会参加費など全家庭から)</label>
+          <div class="row">
+            <input type="text" id="bulkLabel" placeholder="名目(例:9月分月謝)" style="flex:2;">
+            <input type="number" id="bulkAmount" placeholder="金額" style="flex:1;">
+            <select id="bulkMode" style="flex:1.2;">
+              <option value="flat">一律(家庭ごと)</option>
+              <option value="perKid">人数分(子ども数×金額)</option>
+            </select>
+          </div>
+          <div id="bulkTargets" style="margin:0.5rem 0; display:flex; gap:0.6rem; flex-wrap:wrap;"></div>
+          <button type="button" class="generate-btn" id="bulkChargeBtn" style="padding:0.7rem;">➖ チェックした家庭から一括差引</button>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>📊 残高一覧(低残高しきい値:<input type="number" id="depoThreshold" value="1000" style="width:90px; display:inline-block; padding:0.2rem;">円)</label>
+          <div id="balanceTable"></div>
+        </div>
+        <div class="row" style="margin-top:0.6rem;">
+          <button type="button" class="add-row" id="lineBalanceBtn" style="background:#0b8043;">📋 残高一覧をLINE用に生成</button>
+          <button type="button" class="add-row" id="lineRequestBtn" style="background:#b76300;">📋 低残高の入金依頼文を生成</button>
+        </div>
+      </div>
+
+      <div class="output-section" id="depoOutputSection">
+        <h2>📋 LINEに貼り付け用テキスト</h2>
+        <textarea class="output-text" id="depoOutputText" readonly></textarea>
+        <div class="output-actions">
+          <button type="button" class="copy-btn" id="depoCopyBtn">コピーする</button>
+          <span class="copy-status" id="depoCopyStatus"></span>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>🧾 取引履歴(最新30件・間違えた記録は×で取消)</label>
+          <div id="txHistory"></div>
+        </div>
+        <div class="note">残高はこの履歴から自動計算されます。「いつ・何で・いくら」が全部残るので、保護者への説明も記録ベースでできます。生成結果・履歴はこのブラウザ内のみ(localStorage)。</div>
       </div>
   </div>
 
@@ -994,6 +1089,250 @@
     $('eventCopyBtn').addEventListener('click', () => copyText($('eventOutputText').value, $('eventCopyStatus')));
 
     /* ============================================================
+       月謝・集金(デポジット)ロジック(v1.2)
+       ============================================================ */
+    const DEPO_KEY = 'hishoSpoDepo';
+
+    function getDepo() {
+      try {
+        const d = JSON.parse(localStorage.getItem(DEPO_KEY) || '{}');
+        return { families: Array.isArray(d.families) ? d.families : [], tx: Array.isArray(d.tx) ? d.tx : [], threshold: d.threshold || 1000 };
+      } catch (e) { return { families: [], tx: [], threshold: 1000 }; }
+    }
+    function saveDepo(d) { localStorage.setItem(DEPO_KEY, JSON.stringify(d)); }
+
+    function balanceOf(famId, tx) {
+      return tx.filter(t => t.famId === famId).reduce((s, t) => s + t.amount, 0);
+    }
+
+    // ---- 家庭リスト ----
+    function renderFamilies() {
+      const depo = getDepo();
+      $('famList').innerHTML = depo.families.map(f => `
+        <div class="fam-row" data-id="${f.id}">
+          <input type="text" class="fam-name" value="${esc(f.name)}" placeholder="例:田中">
+          <input type="number" class="fam-kids" value="${f.kids || 1}" min="1" max="10" aria-label="子どもの人数">
+          <span class="note" style="margin:0;">人</span>
+          <button type="button" class="remove-row fam-del">×</button>
+        </div>
+      `).join('') || '<div class="note">「＋ 家庭を追加」から登録してください。</div>';
+      renderTxFamSelect();
+      renderBulkTargets();
+      renderBalances();
+      renderTxHistory();
+    }
+
+    $('addFamBtn').addEventListener('click', () => {
+      const depo = getDepo();
+      depo.families.push({ id: 'fam-' + Date.now() + '-' + Math.random().toString(36).slice(2,6), name: '', kids: 1 });
+      saveDepo(depo);
+      renderFamilies();
+    });
+
+    $('famList').addEventListener('change', e => {
+      const row = e.target.closest('.fam-row');
+      if (!row) return;
+      const depo = getDepo();
+      const fam = depo.families.find(f => f.id === row.dataset.id);
+      if (!fam) return;
+      fam.name = row.querySelector('.fam-name').value.trim();
+      fam.kids = parseInt(row.querySelector('.fam-kids').value, 10) || 1;
+      saveDepo(depo);
+      renderTxFamSelect();
+      renderBulkTargets();
+      renderBalances();
+    });
+
+    $('famList').addEventListener('click', e => {
+      const del = e.target.closest('.fam-del');
+      if (!del) return;
+      const row = del.closest('.fam-row');
+      const depo = getDepo();
+      const fam = depo.families.find(f => f.id === row.dataset.id);
+      const txCount = depo.tx.filter(t => t.famId === row.dataset.id).length;
+      const msg = txCount
+        ? `「${fam ? fam.name : ''}」を削除します。この家庭の取引履歴 ${txCount}件も一緒に消えます。\n\n削除しますか?`
+        : `「${fam ? fam.name : ''}」を削除しますか?`;
+      if (!confirm(msg)) return;
+      depo.families = depo.families.filter(f => f.id !== row.dataset.id);
+      depo.tx = depo.tx.filter(t => t.famId !== row.dataset.id);
+      saveDepo(depo);
+      renderFamilies();
+    });
+
+    // ---- 記録追加(入金・個別差引) ----
+    function renderTxFamSelect() {
+      const depo = getDepo();
+      $('txFam').innerHTML = '<option value="">─ 家庭を選択 ─</option>' +
+        depo.families.filter(f => f.name).map(f => `<option value="${f.id}">${esc(f.name)}家</option>`).join('');
+    }
+
+    $('txAddBtn').addEventListener('click', () => {
+      const famId = $('txFam').value;
+      const type = $('txType').value;
+      const amount = parseInt($('txAmount').value, 10);
+      let label = $('txLabel').value.trim();
+      const date = $('txDate').value || new Date().toISOString().slice(0, 10);
+      if (!famId) { alert('家庭を選択してください'); return; }
+      if (!amount || amount <= 0) { alert('金額を入力してください'); return; }
+      if (!label) label = type === 'in' ? 'お預かり' : '差引';
+
+      const depo = getDepo();
+      depo.tx.unshift({
+        id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+        date, famId, label,
+        amount: type === 'in' ? amount : -amount,
+      });
+      saveDepo(depo);
+      $('txLabel').value = '';
+      renderBalances();
+      renderTxHistory();
+    });
+
+    // ---- 一括差引 ----
+    function renderBulkTargets() {
+      const depo = getDepo();
+      $('bulkTargets').innerHTML = depo.families.filter(f => f.name).map(f => `
+        <label class="bulk-check"><input type="checkbox" class="bulk-target" value="${f.id}" checked>${esc(f.name)}家</label>
+      `).join('') || '<span class="note">家庭を登録すると選択できます</span>';
+    }
+
+    $('bulkChargeBtn').addEventListener('click', () => {
+      const label = $('bulkLabel').value.trim();
+      const amount = parseInt($('bulkAmount').value, 10);
+      const mode = $('bulkMode').value;
+      const targets = [...document.querySelectorAll('.bulk-target:checked')].map(cb => cb.value);
+      if (!label) { alert('名目を入力してください(例:9月分月謝)'); return; }
+      if (!amount || amount <= 0) { alert('金額を入力してください'); return; }
+      if (!targets.length) { alert('対象の家庭をチェックしてください'); return; }
+
+      const depo = getDepo();
+      const date = new Date().toISOString().slice(0, 10);
+      const preview = targets.map(id => {
+        const f = depo.families.find(x => x.id === id);
+        const amt = mode === 'perKid' ? amount * (f.kids || 1) : amount;
+        return `${f.name}家:${amt.toLocaleString()}円`;
+      }).join('\n');
+      if (!confirm(`「${label}」として以下を差引します:\n\n${preview}\n\n実行しますか?`)) return;
+
+      targets.forEach(id => {
+        const f = depo.families.find(x => x.id === id);
+        const amt = mode === 'perKid' ? amount * (f.kids || 1) : amount;
+        depo.tx.unshift({
+          id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2,6) + '-' + id.slice(-4),
+          date, famId: id, label, amount: -amt,
+        });
+      });
+      saveDepo(depo);
+      $('bulkLabel').value = '';
+      $('bulkAmount').value = '';
+      renderBalances();
+      renderTxHistory();
+    });
+
+    // ---- 残高一覧 ----
+    function renderBalances() {
+      const depo = getDepo();
+      const threshold = parseInt($('depoThreshold').value, 10) || 1000;
+      const named = depo.families.filter(f => f.name);
+      if (!named.length) { $('balanceTable').innerHTML = '<div class="note">家庭を登録すると残高が表示されます。</div>'; return; }
+      const rows = named.map(f => {
+        const bal = balanceOf(f.id, depo.tx);
+        let cls = 'bal-ok', mark = '';
+        if (bal < 0) { cls = 'bal-danger'; mark = ' ❌不足'; }
+        else if (bal < threshold) { cls = 'bal-warn'; mark = ' ⚠️わずか'; }
+        return `<tr><td>${esc(f.name)}家(${f.kids || 1}人)</td><td class="amount ${cls}">${bal.toLocaleString()}円${mark}</td></tr>`;
+      }).join('');
+      $('balanceTable').innerHTML = `<table class="balance-table"><tr><th>家庭</th><th style="text-align:right;">残高</th></tr>${rows}</table>`;
+    }
+    $('depoThreshold').addEventListener('change', () => {
+      const depo = getDepo();
+      depo.threshold = parseInt($('depoThreshold').value, 10) || 1000;
+      saveDepo(depo);
+      renderBalances();
+    });
+
+    // ---- 取引履歴 ----
+    function renderTxHistory() {
+      const depo = getDepo();
+      const famName = id => { const f = depo.families.find(x => x.id === id); return f ? f.name + '家' : '(削除済)'; };
+      const items = depo.tx.slice(0, 30).map(t => `
+        <div class="tx-item">
+          <span>${esc(t.date)} ${esc(famName(t.famId))} ${esc(t.label)}</span>
+          <span>
+            <span class="${t.amount >= 0 ? 'tx-in' : 'tx-out'}">${t.amount >= 0 ? '+' : ''}${t.amount.toLocaleString()}円</span>
+            <button type="button" class="tx-del" data-tx="${t.id}">×</button>
+          </span>
+        </div>
+      `).join('');
+      $('txHistory').innerHTML = items || '<div class="note">まだ記録がありません。</div>';
+    }
+    $('txHistory').addEventListener('click', e => {
+      const del = e.target.closest('.tx-del');
+      if (!del) return;
+      if (!confirm('この記録を取り消します。残高も再計算されます。\n\n取り消しますか?')) return;
+      const depo = getDepo();
+      depo.tx = depo.tx.filter(t => t.id !== del.dataset.tx);
+      saveDepo(depo);
+      renderBalances();
+      renderTxHistory();
+    });
+
+    // ---- LINE共有テキスト ----
+    $('lineBalanceBtn').addEventListener('click', () => {
+      const depo = getDepo();
+      const threshold = parseInt($('depoThreshold').value, 10) || 1000;
+      const named = depo.families.filter(f => f.name);
+      if (!named.length) { alert('家庭を登録してください'); return; }
+      const today = new Date();
+      const lines = [];
+      lines.push(`【デポジット残高のお知らせ】${today.getMonth()+1}/${today.getDate()}時点`);
+      lines.push('');
+      named.forEach(f => {
+        const bal = balanceOf(f.id, depo.tx);
+        let mark = '';
+        if (bal < 0) mark = ' ❌不足(立替中)';
+        else if (bal < threshold) mark = ' ⚠️残高わずか';
+        lines.push(`${f.name}家:${bal.toLocaleString()}円${mark}`);
+      });
+      lines.push('');
+      lines.push('⚠️❌の家庭は追加のお預かり(5,000円)をお願いします。');
+      lines.push('次回練習日にお持ちください。');
+      $('depoOutputText').value = lines.join('\n');
+      $('depoOutputSection').classList.add('show');
+      $('depoOutputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    $('lineRequestBtn').addEventListener('click', () => {
+      const depo = getDepo();
+      const threshold = parseInt($('depoThreshold').value, 10) || 1000;
+      const low = depo.families.filter(f => f.name && balanceOf(f.id, depo.tx) < threshold);
+      if (!low.length) { alert('低残高の家庭はありません🎉'); return; }
+      const blocks = low.map(f => {
+        const bal = balanceOf(f.id, depo.tx);
+        return [
+          `${f.name}様`,
+          `デポジット残高が${bal.toLocaleString()}円となっております。`,
+          `追加のお預かり(5,000円)をお願いできますでしょうか。`,
+          `次回練習日にお持ちいただければ大丈夫です。`,
+        ].join('\n');
+      });
+      $('depoOutputText').value = blocks.join('\n\n────────\n\n');
+      $('depoOutputSection').classList.add('show');
+      $('depoOutputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    $('depoCopyBtn').addEventListener('click', () => copyText($('depoOutputText').value, $('depoCopyStatus')));
+
+    // 初期化
+    (function initDepo() {
+      $('txDate').value = new Date().toISOString().slice(0, 10);
+      const depo = getDepo();
+      $('depoThreshold').value = depo.threshold || 1000;
+      renderFamilies();
+    })();
+
+    /* ============================================================
        共通ユーティリティ
        ============================================================ */
     function formatDateJP(yyyymmdd) {
@@ -1021,7 +1360,8 @@
         '娘のミニバス活動で「代表って時間ある人がやるけど、本当は時間ない人ほどツールが必要」と気づいて作りました。売り物ではなく作ってみたシリーズです。\n\n' +
         '・🚗 校外試合(配車):遠征の集合案内+配車割を自動生成\n' +
         '・📋 練習当番:期間+曜日で月間の当番を公平ローテ\n' +
-        '・🏫 自校試合(設営):開催案内+会場設営など役割分担(希望・常駐考慮)\n\n' +
+        '・🏫 自校試合(設営):開催案内+会場設営など役割分担(希望・常駐考慮)\n' +
+        '・💰 月謝・集金:デポジット式で立替・両替をなくす(残高は取引履歴から自動計算)\n\n' +
         '・入力した情報は外部に送信されません(localStorage完結)\n' +
         '・APIキー不要・登録不要・課金なし\n' +
         '・問い合わせ対応は行っていません(Issue報告は歓迎)\n' +
