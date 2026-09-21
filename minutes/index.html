@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 議事録テンプレ整形</title>
+<style>
+  :root { --crimson: #c41e3a; --crimson-dark: #a31830; --navy: #1f2d3d; --soft-cream: #fffbea; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #333; background: #fafafa; }
+  .brand { color: #888; font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; }
+  .subcopy { color: #666; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem; }
+  .helper-banner { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.9rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; line-height: 1.6; }
+
+  .form, .section { background: white; padding: 1.3rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+  .section h2 { font-size: 1.05rem; color: var(--navy); margin: 0 0 0.6rem; border-left: 4px solid var(--crimson); padding-left: 0.6rem; }
+  label { display: block; font-size: 0.83rem; margin-bottom: 0.25rem; color: #666; font-weight: 600; }
+  input, select, textarea { width: 100%; padding: 0.55rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; font-family: inherit; }
+  textarea { resize: vertical; }
+  .row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 150px; }
+  .field-block { margin-bottom: 0.8rem; }
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 4px; }
+  .btn-sub { background: #777; color: white; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-sub:hover { background: #555; }
+
+  .api-box { background: var(--soft-cream); border-radius: 6px; padding: 0.9rem 1rem; margin-bottom: 1rem; }
+  .api-box label { font-size: 0.8rem; }
+
+  .generate-btn { display: block; width: 100%; background: var(--crimson); color: white; padding: 1rem; border-radius: 6px; font-size: 1.15rem; font-weight: bold; margin-top: 0.4rem; box-shadow: 0 2px 6px rgba(196,30,58,0.25); transition: all 0.15s; }
+  .generate-btn:hover:not(:disabled) { background: var(--crimson-dark); transform: translateY(-1px); }
+  .generate-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  .cost-line { text-align: center; font-size: 0.83rem; color: #888; margin-top: 0.45rem; }
+
+  .output-text { width: 100%; min-height: 320px; padding: 0.9rem; border: 1px solid #ddd; border-radius: 4px; font-family: "Hiragino Sans", "Meiryo", monospace; font-size: 0.92rem; line-height: 1.7; background: #fafafa; resize: vertical; }
+  .output-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .copy-btn { background: #0b8043; color: white; padding: 0.55rem 1.2rem; font-size: 0.95rem; font-weight: 600; }
+  .copy-btn:hover { background: #096432; }
+  .copy-status { color: #0b8043; font-size: 0.85rem; }
+  .status-line { font-size: 0.9rem; color: #888; padding: 0.5rem 0; }
+  .error-box { background: #ffebee; color: #c62828; padding: 0.8rem 1rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.6rem; line-height: 1.6; display: none; }
+
+  .note { font-size: 0.8rem; color: #888; margin-top: 0.35rem; line-height: 1.5; }
+  .privacy-box { background: #fff8f8; border: 1px solid #f0c0c0; border-radius: 8px; padding: 0.9rem 1.1rem; font-size: 0.83rem; color: #555; line-height: 1.7; margin-top: 1.2rem; }
+  .privacy-box strong { color: #d0021b; }
+
+  /* モーダル */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 8px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem 1.8rem; }
+  .modal h2 { font-size: 1.15rem; color: var(--crimson); margin-top: 0; }
+  .modal p, .modal li { font-size: 0.9rem; line-height: 1.65; color: #444; }
+  .checklist { background: var(--soft-cream); padding: 0.8rem 1rem; border-radius: 6px; margin: 1rem 0; }
+  .checklist label { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start; font-size: 0.9rem; line-height: 1.6; color: #333; margin: 0.55rem 0; cursor: pointer; font-weight: normal; }
+  .checklist input { width: auto; margin: 0.35rem 0 0 0; }
+  .checklist label > span { display: block; }
+  .modal-actions { text-align: right; margin-top: 1rem; }
+  .modal-actions button { padding: 0.6rem 1.4rem; font-size: 0.95rem; }
+  .agree-btn { background: var(--crimson); color: white; }
+  .agree-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #888; text-align: center; line-height: 1.7; }
+  footer a, footer .link-btn { color: #888; text-decoration: underline; background: none; border: none; cursor: pointer; font: inherit; padding: 0; }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>議事録テンプレ整形</h1>
+  <div class="subcopy">役員秘書・経営者・士業のための業務ツール集</div>
+
+  <div class="helper-banner">
+    📝 会議メモ・文字起こしテキストを貼り付けると、<strong>実務で納品されている型の議事録</strong>に整形します。<br>
+    「〜が共有された」の客観報告体・発言の帰属・決定事項とToDoの分離 ─ AI議事録が"それっぽいだけ"にならないための型を焼き込んでいます。<br>
+    🔑 利用にはご自身の <strong>Claude または OpenAI のAPIキー</strong>が必要です(BYOK方式・従量課金は数円/回)。
+  </div>
+
+  <div class="form">
+    <div class="api-box">
+      <div class="row">
+        <div class="field-block" style="max-width:200px;">
+          <label>AIプロバイダ</label>
+          <select id="provider">
+            <option value="anthropic">Claude(Anthropic)</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </div>
+        <div class="field-block">
+          <label>APIキー(ブラウザにのみ保存)</label>
+          <input type="password" id="apiKey" placeholder="sk-ant-... / sk-...">
+        </div>
+        <div class="field-block" style="max-width:220px;">
+          <label>モデル(変更可)</label>
+          <select id="modelSelect"></select>
+          <input type="text" id="model" style="margin-top:0.35rem; display:none;" placeholder="モデル名を入力">
+        </div>
+      </div>
+      <div class="note">キーはこのブラウザの localStorage にのみ保存されます。費用はご自身のAPIアカウントに発生します(1回の整形で目安1〜3円)。<button type="button" class="link-btn" id="openSetupHelp" style="color:#b76300; text-decoration:underline; background:none; border:none; cursor:pointer; font:inherit; padding:0;">キーの取得・上限設定の手順</button></div>
+    </div>
+
+    <div class="row">
+      <div class="field-block">
+        <label>会議名(任意)</label>
+        <input type="text" id="meetingName" placeholder="例:○○事業 キックオフ打ち合わせ">
+      </div>
+      <div class="field-block" style="max-width:180px;">
+        <label>日付(任意)</label>
+        <input type="date" id="meetingDate">
+      </div>
+      <div class="field-block" style="max-width:220px;">
+        <label>テンプレート</label>
+        <select id="template">
+          <option value="standard">標準ビジネス議事録</option>
+          <option value="internal">社内定例(軽量)</option>
+          <option value="sales">商談・営業メモ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-block">
+      <label>出席者(任意・1行1人。「話者1=金田様」のような対応表としても使えます)</label>
+      <textarea id="attendees" rows="3" placeholder="AXIA 金田様&#10;発注側 浜野様&#10;話者1=金田様(文字起こしの話者ラベルを置き換えたい場合)"></textarea>
+    </div>
+
+    <div class="field-block">
+      <label>会議メモ・文字起こしテキスト ※必須</label>
+      <textarea id="sourceText" rows="12" placeholder="ここに会議メモや文字起こしを貼り付けてください。&#10;&#10;⚠️ 機密性の高い固有名詞(取引先名・金額など)は、必要に応じて「A社」「X円」のようにマスキングしてから貼り付けることを推奨します。"></textarea>
+      <div class="note" id="charCount">0文字</div>
+    </div>
+
+    <div class="field-block">
+      <label>追加指示(任意)</label>
+      <input type="text" id="extraInstruction" placeholder="例:ToDoは表形式で / 決定事項を先頭に / 敬称は「さん」で統一">
+    </div>
+
+    <button type="button" class="generate-btn" id="generateBtn">📝 議事録に整形する</button>
+    <div class="cost-line" id="costLine">概算コスト:─</div>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <div class="section" id="outputSection" style="display:none;">
+    <h2>整形結果</h2>
+    <div class="status-line" id="statusLine"></div>
+    <textarea class="output-text" id="outputText"></textarea>
+    <div class="output-actions">
+      <button type="button" class="copy-btn" id="copyBtn">コピーする</button>
+      <span class="copy-status" id="copyStatus"></span>
+      <button type="button" class="btn-sub" id="downloadBtn">📥 .txt でダウンロード</button>
+    </div>
+    <div class="note">結果は編集できます(誤りがあれば直してからコピー)。AIの出力は必ず人間の目で最終確認してください。</div>
+  </div>
+
+  <div class="privacy-box">
+    <strong>⚠️ このツールは、貼り付けたテキストを外部(選択したAI事業者)に送信します。</strong><br>
+    ・秘書ノートの他のツールと異なり、整形処理のために入力テキストが Anthropic / OpenAI のサーバへ送信されます。<br>
+    ・どちらのAPIも、送信データは<strong>デフォルトでAIの学習に使われない</strong>方針です(2026年時点の各社規約)。とはいえ、機密性の高い内容は社内規程を確認のうえ、固有名詞のマスキングを推奨します。<br>
+    ・APIキー・入力内容の下書きはこのブラウザにのみ保存され、作者のサーバ等には一切送信されません(そもそもサーバがありません)。
+  </div>
+
+  <!-- 初回同意モーダル -->
+  <div class="modal-overlay" id="consentModal">
+    <div class="modal">
+      <h2>⚠️ 利用前にご確認ください</h2>
+      <p>このツールは、貼り付けたテキストをAI(Claude または OpenAI)のAPIに送信して議事録に整形します。ご利用の前に、以下の3点をご確認ください。</p>
+      <div class="checklist">
+        <label><input type="checkbox" class="consent-chk"><span>貼り付けたテキストが、選択したAI事業者(Anthropic / OpenAI)のサーバに送信されることを理解しました</span></label>
+        <label><input type="checkbox" class="consent-chk"><span>APIの利用費用は自分のAPIアカウントに発生すること、APIダッシュボードで<strong>月額上限を設定できる</strong>ことを理解しました</span></label>
+        <label><input type="checkbox" class="consent-chk"><span>機密性の高い情報は、マスキングするか、社内規程を確認してから利用します</span></label>
+      </div>
+      <p style="font-size:0.8rem;color:#888;">※ 同意はこのブラウザに記録され、次回からは表示されません</p>
+      <div class="modal-actions">
+        <button type="button" class="agree-btn" id="consentAgreeBtn" disabled>理解して使う</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">テキストの整形はこのツールで無料。<strong>音声の文字起こしから丸ごと任せたい方は、議事録作成代行を承っています</strong> → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+
+    /* ============ プロバイダ設定 ============ */
+    const PROVIDERS = {
+      anthropic: {
+        label: 'Claude(Anthropic)',
+        defaultModel: 'claude-haiku-4-5-20251001',
+        keyPrefix: 'sk-ant-',
+        // 1Mトークンあたりのドル(概算表示用)
+        priceIn: 1.0, priceOut: 5.0,
+        models: [
+          { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5(速い・安い)' },
+          { id: 'claude-sonnet-5', label: 'Sonnet 5(バランス)' },
+          { id: 'claude-opus-5', label: 'Opus 5(高精度・高コスト)' },
+        ],
+      },
+      openai: {
+        label: 'OpenAI',
+        defaultModel: 'gpt-4o-mini',
+        keyPrefix: 'sk-',
+        priceIn: 0.15, priceOut: 0.6,
+        models: [
+          { id: 'gpt-4o-mini', label: 'GPT-4o mini(速い・安い)' },
+          { id: 'gpt-4o', label: 'GPT-4o(バランス)' },
+          { id: 'gpt-4.1', label: 'GPT-4.1(高精度)' },
+        ],
+      },
+    };
+    const CUSTOM_MODEL = '__custom__';
+    const YEN_PER_USD = 155;
+
+    function currentProvider() { return PROVIDERS[$('provider').value]; }
+
+    // 現在選択中のモデル名(プルダウン or 手入力)
+    function currentModel() {
+      return $('modelSelect').value === CUSTOM_MODEL
+        ? $('model').value.trim()
+        : $('modelSelect').value;
+    }
+
+    // プロバイダ切替:モデル選択肢・キーを復元
+    function applyProvider() {
+      const pv = $('provider').value;
+      const p = PROVIDERS[pv];
+      const saved = localStorage.getItem(`hishoMin_model_${pv}`) || p.defaultModel;
+
+      $('modelSelect').innerHTML =
+        p.models.map(m => `<option value="${m.id}">${m.label}</option>`).join('') +
+        `<option value="${CUSTOM_MODEL}">その他(手入力)</option>`;
+
+      const known = p.models.some(m => m.id === saved);
+      if (known) {
+        $('modelSelect').value = saved;
+        $('model').style.display = 'none';
+        $('model').value = '';
+      } else {
+        $('modelSelect').value = CUSTOM_MODEL;
+        $('model').style.display = '';
+        $('model').value = saved;
+      }
+
+      $('apiKey').value = localStorage.getItem(`hishoMin_key_${pv}`) || '';
+      updateCost();
+    }
+
+    $('provider').addEventListener('change', () => {
+      localStorage.setItem('hishoMin_provider', $('provider').value);
+      applyProvider();
+    });
+    $('apiKey').addEventListener('change', () => {
+      localStorage.setItem(`hishoMin_key_${$('provider').value}`, $('apiKey').value.trim());
+    });
+    $('modelSelect').addEventListener('change', () => {
+      const isCustom = $('modelSelect').value === CUSTOM_MODEL;
+      $('model').style.display = isCustom ? '' : 'none';
+      if (isCustom) { $('model').focus(); return; }
+      localStorage.setItem(`hishoMin_model_${$('provider').value}`, $('modelSelect').value);
+    });
+    $('model').addEventListener('change', () => {
+      const v = $('model').value.trim();
+      if (v) localStorage.setItem(`hishoMin_model_${$('provider').value}`, v);
+    });
+
+    /* ============ 初回同意モーダル ============ */
+    const consentChks = () => [...document.querySelectorAll('.consent-chk')];
+    document.addEventListener('change', e => {
+      if (e.target.classList.contains('consent-chk')) {
+        $('consentAgreeBtn').disabled = !consentChks().every(c => c.checked);
+      }
+    });
+    $('consentAgreeBtn').addEventListener('click', () => {
+      localStorage.setItem('hishoMinConsent', '1');
+      $('consentModal').classList.remove('show');
+    });
+    if (!localStorage.getItem('hishoMinConsent')) $('consentModal').classList.add('show');
+
+    /* ============ 文字数・概算コスト ============ */
+    function updateCost() {
+      const len = $('sourceText').value.length;
+      $('charCount').textContent = `${len.toLocaleString()}文字`;
+      if (!len) { $('costLine').textContent = '概算コスト:─'; return; }
+      const p = currentProvider();
+      // 日本語はおおよそ1文字≒1トークン、出力は入力の6割と仮定した粗い目安
+      const inTok = len, outTok = Math.round(len * 0.6);
+      const usd = (inTok * p.priceIn + outTok * p.priceOut) / 1e6;
+      const yen = usd * YEN_PER_USD;
+      $('costLine').textContent = `概算コスト:約${yen < 0.1 ? '0.1円未満' : yen.toFixed(1) + '円'}(${p.label} / 入力${inTok.toLocaleString()}トークン想定・かなり粗い目安)`;
+    }
+    $('sourceText').addEventListener('input', updateCost);
+
+    /* ============ プロンプト(このツールの本体) ============ */
+    const STYLE_RULES = `【文体ルール】※厳守
+- 客観報告体で書く:「〜が共有された」「〜が確認された」「〜との認識を合わせた」「〜との回答があった」
+- 発言の帰属を残す:「○○様より〜との説明があった」のように、誰の発言・情報かを明記する
+- です・ます調は使わない
+- 原文にない情報を創作しない。推測で埋めない
+- 特に日付の年は、原文または入力欄に年がなければ絶対に書かない(「9月2日」のまま。年を推測して補うことは厳禁)
+- 原文が曖昧・不明瞭な箇所は【要確認】と明記する
+- 事実(起きたこと)・発言(誰かが言ったこと)・決定(合意されたこと)を混同しない
+- 出席者に敬称がある場合は「様」で統一する(追加指示があればそれに従う)
+- 参加者欄には、原文に所属・会社名・役職が書かれていれば必ず残す(例:「代理店 山本様」「AXIA 金田様」)
+
+【決定事項とToDoの書き分け】※最重要
+- 決定事項 = 「何が決まったか」(方針・結論)。ToDo = 「誰が何をするか」(行動)
+- 同じ内容を両方に書いてはいけない。行動であればToDoだけに書く
+
+悪い例(同じ文をコピーしているのでNG):
+  決定事項:佐藤様がABテスト案を作成すること
+  ToDo:佐藤様 / ABテスト案を作成
+良い例(方針と行動をセットで書く。これは重複ではない):
+  決定事項:LPの文言変更は、ABテストの結果を見て判断することとなった
+  ToDo:佐藤様 / ABテスト案を作成(来週まで)
+  決定事項:予算は役員会での確認後に決定することとなった
+  ToDo:田中部長 / 役員会で予算を確認(来週金曜まで)
+
+- 決定事項に書いた方針それぞれについて、実行する人がいる行動があれば、必ずToDoにも書く
+- 原文に「誰が何をする」と書かれている行動は、ひとつ残らずToDoに拾う
+- 原文に期限が書かれていれば、ToDoに必ず期限を入れる
+
+- 「〜したい」「〜してはどうか」のような提案・要望は決定事項に書かない(議題の本文に留める)
+- 決定事項が原文から読み取れない場合は、無理に作らず「特になし」と書く`;
+
+    const TEMPLATES = {
+      standard: {
+        name: '標準ビジネス議事録',
+        structure: `【出力の型】※この構成・この順序で出力する
+議事録
+{会議名}
+日時:{日付}
+参加者
+{参加者リスト(1行1人)}
+
+1.{議題名}
+{内容(客観報告体)}
+
+2.{議題名}
+{内容}
+(議題の数だけ続ける。サブ項目が必要な場合は(1)(2)で階層化)
+
+{最後の番号}.今後のスケジュール
+{スケジュールに関する内容(あれば)}
+
+決定事項
+{合意・決定された事項のみを箇条書き}
+
+ToDo
+担当 / 内容 の形式で一覧(担当が不明な場合は【要確認】)`,
+      },
+      internal: {
+        name: '社内定例(軽量)',
+        structure: `【出力の型】※この構成で簡潔に出力する
+{会議名} 議事メモ
+日時:{日付} / 参加:{参加者}
+
+■ 決定事項
+{箇条書き}
+
+■ ToDo(担当・期限)
+{担当:内容(期限)の形式で箇条書き。期限不明は【要確認】}
+
+■ 共有事項・議論の要点
+{簡潔な箇条書き}
+
+■ 次回への持ち越し
+{あれば}`,
+      },
+      sales: {
+        name: '商談・営業メモ',
+        structure: `【出力の型】※この構成で出力する
+商談メモ:{会社名・会議名}
+日時:{日付} / 先方:{先方出席者} / 当方:{当方出席者}
+
+■ 商談サマリー
+{2〜3行で概況}
+
+■ 先方の状況・ニーズ
+{課題・要望・予算感・時期など、先方から得られた情報}
+
+■ 先方の反応
+{提案への反応・温度感。発言の帰属を明記}
+
+■ 懸念・障壁
+{ネックになりそうな点}
+
+■ ネクストアクション
+担当 / 内容 / 期限 の形式で一覧
+
+■ 補足メモ
+{その他気づき}`,
+      },
+    };
+
+    function buildSystemPrompt(templateKey) {
+      return `あなたは経験豊富なプロの議事録作成者です。与えられた会議メモ・文字起こしテキストを、以下の文体ルールと型に厳密に従って整形してください。
+
+${STYLE_RULES}
+
+${TEMPLATES[templateKey].structure}
+
+【注意】
+- 会議名・日付・出席者が与えられていない場合は、原文から読み取れる範囲で補い、読み取れなければ{未記入}とする
+- 出席者リストに「話者1=○○様」のような対応表がある場合、文字起こし中の話者ラベルをその名前に置き換える
+- 出力は整形後の議事録本文のみ。前置きや解説は一切書かない`;
+    }
+
+    function buildUserPrompt() {
+      const parts = [];
+      const name = $('meetingName').value.trim();
+      const date = $('meetingDate').value;
+      const att = $('attendees').value.trim();
+      const extra = $('extraInstruction').value.trim();
+      if (name) parts.push(`会議名:${name}`);
+      if (date) {
+        const [y, m, d] = date.split('-');
+        parts.push(`日付:${y}年${Number(m)}月${Number(d)}日`);
+      }
+      if (att) parts.push(`出席者(話者対応表を含む):\n${att}`);
+      if (extra) parts.push(`追加指示:${extra}`);
+      parts.push(`--- 以下が会議メモ・文字起こし本文 ---\n${$('sourceText').value.trim()}`);
+      return parts.join('\n\n');
+    }
+
+    /* ============ API呼び出し ============ */
+    async function callAnthropic(apiKey, model, system, user) {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 8000,
+          system,
+          messages: [{ role: 'user', content: user }],
+        }),
+      });
+      if (!resp.ok) throw await apiError(resp);
+      const data = await resp.json();
+      return (data.content || []).map(b => b.text || '').join('');
+    }
+
+    async function callOpenAI(apiKey, model, system, user) {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+      });
+      if (!resp.ok) throw await apiError(resp);
+      const data = await resp.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+
+    async function apiError(resp) {
+      let detail = '';
+      try { const j = await resp.json(); detail = j.error?.message || JSON.stringify(j); } catch (e) {}
+      const hints = {
+        401: 'APIキーが無効です。キーが正しいか、コピー時に前後の空白が入っていないかご確認ください。',
+        403: 'アクセスが拒否されました。キーの権限をご確認ください。',
+        404: 'モデル名が見つかりません。モデル欄の名前が正しいかご確認ください。',
+        429: 'レート制限またはクレジット不足です。APIダッシュボードで残高をご確認ください。',
+        500: 'AI事業者側で一時的なエラーが発生しています。少し待って再実行してください。',
+        529: 'AI事業者側が混雑しています。少し待って再実行してください。',
+      };
+      return new Error(`${hints[resp.status] || `APIエラー(${resp.status})`}\n詳細:${detail.slice(0, 300)}`);
+    }
+
+    /* ============ 実行 ============ */
+    $('generateBtn').addEventListener('click', async () => {
+      const apiKey = $('apiKey').value.trim();
+      const model = currentModel();
+      const src = $('sourceText').value.trim();
+      const errBox = $('errorBox');
+      errBox.style.display = 'none';
+
+      if (!apiKey) { showError('APIキーを入力してください。「キーの取得・上限設定の手順」も参考にどうぞ。'); return; }
+      if (!model) { showError('モデルを選択するか、「その他(手入力)」を選んでモデル名を入力してください。'); return; }
+      if (!src) { showError('会議メモ・文字起こしテキストを貼り付けてください。'); return; }
+      if (src.length > 20000) {
+        if (!confirm(`テキストが${src.length.toLocaleString()}文字と長めです。\n長すぎると精度・コストに影響します。分割しての実行もおすすめです。\n\nこのまま実行しますか?`)) return;
+      }
+
+      const system = buildSystemPrompt($('template').value);
+      const user = buildUserPrompt();
+
+      $('generateBtn').disabled = true;
+      $('outputSection').style.display = '';
+      $('statusLine').textContent = '⏳ 整形中です…(通常10〜30秒)';
+      $('outputText').value = '';
+      $('outputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const pv = $('provider').value;
+        const result = pv === 'anthropic'
+          ? await callAnthropic(apiKey, model, system, user)
+          : await callOpenAI(apiKey, model, system, user);
+        $('outputText').value = result.trim();
+        $('statusLine').textContent = `✅ 整形完了(${TEMPLATES[$('template').value].name} / ${model})`;
+      } catch (e) {
+        $('statusLine').textContent = '';
+        showError(e.message);
+      } finally {
+        $('generateBtn').disabled = false;
+      }
+    });
+
+    function showError(msg) {
+      const errBox = $('errorBox');
+      errBox.textContent = msg;
+      errBox.style.display = 'block';
+    }
+
+    /* ============ コピー・ダウンロード ============ */
+    $('copyBtn').addEventListener('click', async () => {
+      const text = $('outputText').value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        $('copyStatus').textContent = '✓ コピーしました';
+      } catch (e) {
+        $('outputText').select();
+        document.execCommand('copy');
+        $('copyStatus').textContent = '✓ コピーしました';
+      }
+      setTimeout(() => { $('copyStatus').textContent = ''; }, 2500);
+    });
+
+    $('downloadBtn').addEventListener('click', () => {
+      const text = $('outputText').value;
+      if (!text) return;
+      const name = $('meetingName').value.trim() || '議事録';
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name.replace(/[\\/:*?"<>|]/g, '_')}.txt`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    /* ============ ヘルプ・免責 ============ */
+    $('openSetupHelp').addEventListener('click', () => {
+      alert(
+        '【APIキーの取得と上限設定(どちらか一方でOK)】\n\n' +
+        '■ Claude(Anthropic)の場合\n' +
+        '1. console.anthropic.com にアカウント登録\n' +
+        '2. Billing でクレジットを購入(最低$5・クレカ登録)\n' +
+        '3. 必要に応じて Spend limits で月額上限を設定\n' +
+        '4. API Keys でキーを作成(sk-ant-...)\n\n' +
+        '■ OpenAIの場合\n' +
+        '1. platform.openai.com にアカウント登録\n' +
+        '2. Billing で支払い方法を登録し、クレジットを購入(最低$5)\n' +
+        '3. Limits で月額上限を設定(推奨:$5)\n' +
+        '4. API keys でキーを作成(sk-...)\n\n' +
+        '※ ChatGPT Plus / Claude Pro の契約とAPIは別物です\n' +
+        '※ どちらも1回の整形で数円程度。$5で数百回分が目安です'
+      );
+    });
+
+    $('openDisclaimer').addEventListener('click', () => {
+      alert(
+        '本ツールは無償で提供されるサンプル実装です。\n\n' +
+        '・貼り付けたテキストは、整形処理のため選択したAI事業者(Anthropic / OpenAI)のAPIに送信されます\n' +
+        '・APIキー・設定はこのブラウザ(localStorage)にのみ保存され、作者のサーバ等への送信はありません\n' +
+        '・API利用料はご自身のAPIアカウントに発生します。上限設定を推奨します\n' +
+        '・AIの出力には誤りが含まれる可能性があります。必ず人間の目で確認してからご利用ください\n' +
+        '・本ツール利用に起因する一切の損害(API費用・出力内容の誤り等)について作者は責任を負いません\n' +
+        '・MITライセンス'
+      );
+    });
+
+    /* ============ 初期化 ============ */
+    (function init() {
+      const savedPv = localStorage.getItem('hishoMin_provider');
+      if (savedPv && PROVIDERS[savedPv]) $('provider').value = savedPv;
+      applyProvider();
+      updateCost();
+    })();
+  </script>
+</body>
+</html>
