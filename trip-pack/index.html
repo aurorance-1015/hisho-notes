@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 出張リンクパック</title>
+<style>
+  :root {
+    --crimson: #c41e3a; --crimson-dark: #a31830; --navy: #1f2d3d; --soft-cream: #fffbea;
+    --stone-50: #fafaf9; --stone-100: #f5f5f4; --stone-200: #e7e5e4; --stone-300: #d6d3d1;
+    --stone-400: #a8a29e; --stone-500: #78716c; --stone-600: #57534e; --stone-700: #44403c;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: var(--stone-700); background: var(--stone-50); }
+  .brand { color: var(--stone-500); font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; color: var(--navy); }
+  .subcopy { color: var(--stone-500); font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem; }
+  .helper-banner { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.9rem; font-size: 0.85rem; color: var(--stone-600); margin-bottom: 1rem; border-radius: 2px; line-height: 1.7; }
+
+  .card { background: white; padding: 1.3rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(68,64,60,0.12); margin-bottom: 1rem; }
+  .card h2 { font-size: 1.05rem; color: var(--navy); margin: 0 0 0.8rem; border-left: 4px solid var(--crimson); padding-left: 0.6rem; }
+  label { display: block; font-size: 0.82rem; margin-bottom: 0.25rem; color: var(--stone-600); font-weight: 600; }
+  input, select, textarea { width: 100%; padding: 0.55rem; border: 1px solid var(--stone-300); border-radius: 4px; font-size: 0.95rem; font-family: inherit; color: var(--stone-700); background: white; }
+  textarea { resize: vertical; }
+  .row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 140px; }
+  .field { margin-bottom: 0.8rem; }
+  .note { font-size: 0.78rem; color: var(--stone-500); margin-top: 0.3rem; line-height: 1.55; }
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 4px; }
+
+  /* 交通手段の切替 */
+  .mode-switch { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+  .mode-btn { flex: 1; background: var(--stone-100); border: 1px solid var(--stone-300); color: var(--stone-500); padding: 0.6rem; font-size: 0.95rem; font-weight: 600; }
+  .mode-btn.active { background: var(--soft-cream); border-color: var(--crimson); color: var(--crimson-dark); }
+
+  /* 行き・帰り */
+  .leg { border: 1px solid var(--stone-200); border-radius: 6px; padding: 0.7rem 0.9rem 0.2rem; margin-bottom: 0.8rem; }
+  .leg-title { font-size: 0.85rem; font-weight: 700; color: var(--navy); margin-bottom: 0.5rem; }
+  .leg .row > .t-mode { flex: 0 0 120px; min-width: 120px; }
+
+  .generate-btn { display: block; width: 100%; background: var(--crimson); color: white; padding: 1rem; border-radius: 6px; font-size: 1.15rem; font-weight: bold; margin-top: 0.3rem; box-shadow: 0 2px 6px rgba(196,30,58,0.25); transition: all 0.15s; }
+  .generate-btn:hover { background: var(--crimson-dark); transform: translateY(-1px); }
+
+  /* 予約前の注意 */
+  .caution { background: #fff4e5; border: 1px solid #f0c088; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.88rem; color: #8a4b00; line-height: 1.6; margin-bottom: 1rem; }
+
+  /* リンク */
+  .trip-summary { font-size: 0.95rem; color: var(--navy); margin-bottom: 0.9rem; line-height: 1.6; }
+  .link-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.8rem; }
+  .group { border: 1px solid var(--stone-200); border-radius: 6px; padding: 0.8rem 0.9rem; background: var(--stone-50); }
+  .group-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem; }
+  .group-title { font-size: 0.9rem; font-weight: 700; color: var(--navy); }
+  .open-all { background: none; border: 1px solid var(--stone-300); color: var(--stone-600); font-size: 0.75rem; padding: 0.2rem 0.55rem; white-space: nowrap; }
+  .open-all:hover { border-color: var(--crimson); color: var(--crimson); }
+  .link-item { display: block; background: white; border: 1px solid var(--stone-200); border-radius: 5px; padding: 0.5rem 0.7rem; margin-bottom: 0.4rem; text-decoration: none; color: var(--stone-700); transition: border-color 0.15s; }
+  .link-item:hover { border-color: var(--crimson); }
+  .link-item .l-name { font-weight: 600; font-size: 0.9rem; color: var(--crimson-dark); }
+  .link-item .l-desc { font-size: 0.76rem; color: var(--stone-500); margin-top: 0.1rem; }
+  .l-warn { color: #b76300; }
+
+  /* 行程表 */
+  .tabs { display: flex; gap: 0.4rem; margin: 0.6rem 0 0.5rem; }
+  .tab { background: var(--stone-100); color: var(--stone-600); padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+  .tab.active { background: var(--crimson); color: white; }
+  .output-text { width: 100%; min-height: 260px; padding: 0.9rem; border: 1px solid var(--stone-300); border-radius: 4px; font-family: "Hiragino Sans", "Meiryo", monospace; font-size: 0.9rem; line-height: 1.7; background: var(--stone-50); }
+  .actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .btn-main { background: var(--crimson); color: white; padding: 0.55rem 1.2rem; font-size: 0.95rem; font-weight: 600; }
+  .btn-main:hover { background: var(--crimson-dark); }
+  .btn-copy { background: #0b8043; color: white; padding: 0.55rem 1.2rem; font-size: 0.95rem; font-weight: 600; }
+  .btn-copy:hover { background: #096432; }
+  .btn-sub { background: var(--stone-500); color: white; padding: 0.45rem 0.9rem; font-size: 0.85rem; }
+  .btn-sub:hover { background: var(--stone-600); }
+  .status { color: #0b8043; font-size: 0.85rem; }
+
+  /* チェックリスト */
+  .check-progress { font-size: 0.9rem; color: var(--navy); margin-bottom: 0.6rem; }
+  .check-progress strong { color: var(--crimson); font-size: 1.1rem; }
+  .check-row { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; border-bottom: 1px solid var(--stone-100); }
+  .check-item { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start; font-size: 0.9rem; font-weight: normal; color: var(--stone-700); padding: 0.4rem 0; cursor: pointer; margin: 0; }
+  .check-item input { width: auto; margin: 0.25rem 0 0; }
+  .check-item.done span { color: var(--stone-400); text-decoration: line-through; }
+  .check-del { background: none; color: var(--stone-400); font-size: 0.95rem; padding: 0.35rem 0.5rem; line-height: 1; }
+  .check-del:hover { color: var(--crimson); }
+  .check-empty { font-size: 0.85rem; color: var(--stone-500); padding: 0.6rem 0; }
+  .check-add { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+  .check-add input { flex: 1; }
+  .check-add button { white-space: nowrap; }
+
+  /* 履歴 */
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0; border-bottom: 1px solid var(--stone-100); font-size: 0.88rem; gap: 0.5rem; }
+  .history-item:last-child { border-bottom: none; }
+  .hi-name { cursor: pointer; color: var(--crimson-dark); text-decoration: underline; }
+  .hi-del { background: none; color: var(--stone-400); font-size: 0.8rem; padding: 0.2rem 0.4rem; }
+  .hi-del:hover { color: var(--crimson); }
+
+  .privacy-box { background: white; border: 1px solid var(--stone-200); border-radius: 8px; padding: 0.9rem 1.1rem; font-size: 0.82rem; color: var(--stone-600); line-height: 1.7; margin-top: 1.2rem; }
+  .hidden { display: none !important; }
+
+  footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--stone-200); font-size: 0.8rem; color: var(--stone-500); text-align: center; line-height: 1.7; }
+  footer a, footer .link-btn { color: var(--stone-500); text-decoration: underline; background: none; border: none; cursor: pointer; font: inherit; padding: 0; }
+
+  @media (max-width: 600px) {
+    .leg .row > .t-mode { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="brand">秘書ノート Hisho Notes</div>
+  <h1>出張リンクパック</h1>
+  <div class="subcopy">役員秘書・経営者・士業のための業務ツール集</div>
+
+  <div class="helper-banner">
+    🧳 出張の手配で、同じ「行き先と日付」を、乗換サイト・新幹線の予約・ホテル検索…と何度も打ち直していませんか。<br>
+    1回の入力で、<strong>乗換・予約・ホテル・地図のリンク</strong>と、役員に送る<strong>行程表</strong>、<strong>出張準備のチェックリスト</strong>をまとめて作ります。<br>
+    🔒 API不要・登録不要。入力内容はこのブラウザの中にだけ保存されます。
+  </div>
+
+  <!-- ============ 入力 ============ -->
+  <div class="card">
+    <h2>出張の内容</h2>
+
+    <div class="mode-switch">
+      <button type="button" class="mode-btn active" data-mode="train">🚄 新幹線・電車</button>
+      <button type="button" class="mode-btn" data-mode="plane">✈️ 飛行機</button>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>出張する人(任意)</label>
+        <input type="text" id="traveler" placeholder="例:田中社長">
+      </div>
+      <div class="field">
+        <label id="fromLabel">出発駅 ※必須</label>
+        <input type="text" id="from" placeholder="例:東京">
+      </div>
+      <div class="field">
+        <label id="toLabel">到着駅 ※必須</label>
+        <input type="text" id="to" placeholder="例:新大阪">
+      </div>
+    </div>
+    <div class="note" id="placeNote" style="margin-top:-0.5rem; margin-bottom:0.8rem;">駅名は「東京」「新大阪」のように、「駅」を付けずに入れるのが確実です。</div>
+
+    <div class="leg">
+      <div class="leg-title">行き</div>
+      <div class="row">
+        <div class="field"><label>日付</label><input type="date" id="goDate"></div>
+        <div class="field"><label>時刻</label><input type="time" id="goTime" value="08:00"></div>
+        <div class="field t-mode"><label>時刻の意味</label>
+          <select id="goType"><option value="dep">この時刻に出発</option><option value="arr">この時刻までに到着</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="leg">
+      <div class="leg-title">帰り</div>
+      <div class="row">
+        <div class="field"><label>日付</label><input type="date" id="backDate"></div>
+        <div class="field"><label>時刻</label><input type="time" id="backTime" value="18:00"></div>
+        <div class="field t-mode"><label>時刻の意味</label>
+          <select id="backType"><option value="dep">この時刻に出発</option><option value="arr">この時刻までに到着</option></select>
+        </div>
+      </div>
+      <div class="note" style="margin-top:-0.4rem; margin-bottom:0.6rem;">行きと帰りが同じ日なら「日帰り」として、ホテルの検索を省きます。</div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>泊まるエリア(任意)</label>
+        <input type="text" id="stayArea" placeholder="空欄なら到着駅の周辺で探します(例:梅田、博多駅)">
+      </div>
+      <div class="field">
+        <label>訪問先(任意)</label>
+        <input type="text" id="visit" placeholder="例:○○株式会社 大阪本社 / 住所">
+      </div>
+    </div>
+
+    <button type="button" class="generate-btn" id="generateBtn">🧳 出張リンクを作成</button>
+  </div>
+
+  <!-- ============ 出力:リンク ============ -->
+  <div id="resultArea" class="hidden">
+    <div class="caution">
+      ⚠️ <strong>予約する前に、リンク先の画面で「日付・時刻・人数」を必ず確認してください。</strong><br>
+      リンク先サイトの仕様が変わると、条件がうまく引き継がれないことがあります。日付違いの予約は取り消し料がかかる場合があるので、最後は必ずご自身の目で。
+    </div>
+
+    <div class="card">
+      <h2>検索・予約リンク</h2>
+      <div class="trip-summary" id="tripSummary"></div>
+      <div class="link-groups" id="linkGroups"></div>
+    </div>
+
+    <!-- ============ 行程表 ============ -->
+    <div class="card">
+      <h2>行程表をつくる</h2>
+      <div class="note" style="margin-top:-0.4rem; margin-bottom:0.8rem;">予約が決まったら、便名・時刻・ホテル名を入れてください。役員や同行者に送る文面ができます。空欄の項目は省かれます。</div>
+      <div class="field">
+        <label>行きの便</label>
+        <input type="text" id="goDetail" placeholder="例:のぞみ15号 東京 8:00発 → 新大阪 10:27着(8号車12番A席)">
+      </div>
+      <div class="field">
+        <label>訪問・会食の予定(1行に1件)</label>
+        <textarea id="schedule" rows="3" placeholder="例:13:00 ○○株式会社(大阪市北区…)&#10;18:30 会食 ○○(北新地)"></textarea>
+      </div>
+      <div class="field" id="hotelDetailField">
+        <label>宿泊先</label>
+        <input type="text" id="hotelDetail" placeholder="例:○○ホテル新大阪(大阪市淀川区… / 06-XXXX-XXXX)">
+      </div>
+      <div class="field">
+        <label>帰りの便</label>
+        <input type="text" id="backDetail" placeholder="例:のぞみ40号 新大阪 17:00発 → 東京 19:27着">
+      </div>
+      <div class="field">
+        <label>備考(任意)</label>
+        <input type="text" id="memo" placeholder="例:お手土産は2号車の荷物棚に入れています">
+      </div>
+      <button type="button" class="btn-main" id="itineraryBtn">📝 行程表を作る</button>
+
+      <div id="itineraryOut" class="hidden">
+        <div class="tabs">
+          <button type="button" class="tab active" data-variant="mail">メール用(丁寧)</button>
+          <button type="button" class="tab" data-variant="chat">LINE・チャット用(短く)</button>
+        </div>
+        <textarea class="output-text" id="itineraryText"></textarea>
+        <div class="actions">
+          <button type="button" class="btn-copy" id="copyBtn">コピーする</button>
+          <span class="status" id="copyStatus"></span>
+        </div>
+        <div class="note">送る前に、便名・時刻・ホテル名に誤りがないか確認してください。文面はこの場で直せます。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ チェックリスト(自分で作れる) ============ -->
+  <div class="card">
+    <h2>出張準備チェックリスト</h2>
+    <div class="note" style="margin-top:-0.4rem; margin-bottom:0.7rem;">項目は自由に追加・削除できます。「田中社長は新幹線は窓側E席」「○○社は受付で入館証が必要」のような、<strong>自分だけが知っている段取り</strong>を書き足していくと、そのまま引き継ぎ資料になります。</div>
+    <div class="check-progress">✓ <strong id="checkDone">0</strong> / <span id="checkTotal">0</span> 完了</div>
+    <div id="checklist"></div>
+    <div class="check-add">
+      <input type="text" id="checkNew" placeholder="項目を追加(例:田中社長は新幹線は窓側E席)">
+      <button type="button" class="btn-main" id="checkAddBtn">＋ 追加</button>
+    </div>
+    <div class="note">複数行のテキストを貼り付けると、1行ずつまとめて追加されます(後任から受け取ったリストの取り込みに)。</div>
+    <div class="actions">
+      <button type="button" class="btn-sub" id="checkUncheckBtn">チェックを外す</button>
+      <button type="button" class="btn-sub" id="checkCopyBtn">📋 テキストでコピー</button>
+      <button type="button" class="btn-sub" id="checkClearBtn">全部消す</button>
+      <button type="button" class="btn-sub" id="checkDefaultBtn">たたき台に戻す</button>
+      <span class="status" id="checkStatus"></span>
+    </div>
+    <div class="note">リストとチェック状態はこのブラウザに保存されます。次の出張の前に「チェックを外す」を押してください(項目は残ります)。</div>
+  </div>
+
+  <!-- ============ 履歴 ============ -->
+  <div class="card">
+    <h2>最近の出張</h2>
+    <div id="historyList"><div class="note">まだ履歴はありません。</div></div>
+  </div>
+
+  <div class="privacy-box">
+    🔒 <strong>データの扱い</strong><br>
+    ・このツールはリンクを作るだけです。<strong>予約や支払いはしません</strong>。予約・支払いは、リンク先の各サイトでご自身で行ってください。<br>
+    ・入力した内容(出張先・日程・行程など)は、お使いのブラウザ(localStorage)にのみ保存され、どこにも送信されません。<br>
+    ・共有PCでは、出張の予定が次の人に見えてしまいます。使い終わったら履歴を削除するか、ブラウザのプライベートモードでご利用ください。
+  </div>
+
+  <footer>
+    秘書ノート Hisho Notes ―
+    <button type="button" class="link-btn" id="openDisclaimer">免責事項</button> /
+    <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> /
+    <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+    <div style="margin-top:0.4rem;">出張の手配そのものを任せたい方は、秘書代行で承っています → <a href="mailto:info@aurorance.biz">info@aurorance.biz</a></div>
+  </footer>
+
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const pad = n => String(n).padStart(2, '0');
+    const WD = ['日','月','火','水','木','金','土'];
+
+    const INPUT_KEY = 'hishoTrip_last';
+    const HIST_KEY = 'hishoTrip_history';
+    const CHECK_KEY = 'hishoTrip_checklist';
+
+    let mode = 'train';
+    let current = null;      // 直近に作成した出張データ
+    let variant = 'mail';
+
+    /* ============ 日付ユーティリティ ============ */
+    function parseDate(ymd) { const [y, m, d] = ymd.split('-').map(Number); return { y, m, d }; }
+    function parseTime(hm) { const [h, mi] = (hm || '08:00').split(':').map(Number); return { h, mi }; }
+    function dateObj(ymd) { const { y, m, d } = parseDate(ymd); return new Date(y, m - 1, d); }
+    function jpLong(ymd) { const { y, m, d } = parseDate(ymd); return `${y}年${m}月${d}日(${WD[dateObj(ymd).getDay()]})`; }
+    function jpMid(ymd) { const { m, d } = parseDate(ymd); return `${m}月${d}日(${WD[dateObj(ymd).getDay()]})`; }
+    function jpShort(ymd) { const { m, d } = parseDate(ymd); return `${m}/${d}(${WD[dateObj(ymd).getDay()]})`; }
+    function nightsBetween(a, b) { return Math.round((dateObj(b) - dateObj(a)) / 86400000); }
+    function ymd(dt) { return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`; }
+    const stripEki = s => s.trim().replace(/駅$/, '');
+    const typeLabel = t => t === 'arr' ? '着' : '発';
+
+    /* ============ リンク生成(URL形式は2026/9に実物のブラウザで確認済み) ============ */
+    const L = {
+      // Yahoo!乗換案内:type=1 出発 / type=4 到着。分は十の位(m1)と一の位(m2)に分ける
+      // ※ shin(新幹線)・ex(有料特急)・al(飛行機)・lb(路線バス)は、URLで省くと「使わない」扱いになる。
+      //    省くと在来線だけの8時間ルートが出るので必ず指定する
+      yahoo(from, to, date, time, t, useAir) {
+        const { y, m, d } = parseDate(date), { h, mi } = parseTime(time);
+        const p = new URLSearchParams({
+          from, to, y, m: pad(m), d: pad(d), hh: pad(h), m1: Math.floor(mi / 10), m2: mi % 10,
+          type: t === 'arr' ? 4 : 1,
+          shin: 1, ex: 1, al: useAir ? 1 : 0, lb: 1,
+        });
+        return 'https://transit.yahoo.co.jp/search/result?' + p;
+      },
+      // ※ 駅すぱあと は、駅名でも駅コード付きでも外部リンクで条件を渡せなかった(2026/9確認)ため入れていない
+      // Googleフライト:日本語の文章で指定する(2026/9にブラウザで確認)
+      // ・帰りの日付を書かないと勝手に「往復」になり、帰りの日付をGoogleが適当に入れる → 運賃が間違う
+      // ・「往復」は行きと帰りが同じ日だと無視される → 日帰りは片道2本に分ける
+      gflight(from, to, goDate, backDate) {
+        const a = parseDate(goDate);
+        const q = backDate
+          ? (() => { const b = parseDate(backDate); return `${from}から${to} ${a.m}月${a.d}日から${b.m}月${b.d}日 往復のフライト`; })()
+          : `${from}から${to} ${a.m}月${a.d}日 片道のフライト`;
+        const p = new URLSearchParams({ q, hl: 'ja' });
+        return 'https://www.google.com/travel/flights?' + p;
+      },
+      // 楽天トラベル:キーワード欄は f_query、charset=utf-8 が必須(f_keyword は古い情報で、別の地域の宿が出る)
+      rakuten(area) {
+        const p = new URLSearchParams({ charset: 'utf-8', f_query: area, f_max: 30 });
+        return 'https://kw.travel.rakuten.co.jp/keyword/Search.do?' + p;
+      },
+      // Googleホテル:日付は「10月13日から10月14日」の日本語で検索語に入れる
+      // ※ checkin= / checkout= パラメータは無視され、Googleが勝手に別の日付を入れる(2026/9確認)。
+      //    「2026-10-13 から 2026-10-14」の書き方も読み取られなかった
+      ghotel(area, checkin, checkout) {
+        const a = parseDate(checkin), b = parseDate(checkout);
+        const p = new URLSearchParams({ q: `${area} ホテル ${a.m}月${a.d}日から${b.m}月${b.d}日`, hl: 'ja' });
+        return 'https://www.google.com/travel/search?' + p;
+      },
+      map(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); },
+      weather(place) { return 'https://www.google.com/search?q=' + encodeURIComponent(`${place} 天気`); },
+    };
+
+    /* ============ 交通手段の切替 ============ */
+    function setMode(m) {
+      mode = m;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+      if (m === 'plane') {
+        $('fromLabel').textContent = '出発地 ※必須';
+        $('toLabel').textContent = '行き先 ※必須';
+        $('from').placeholder = '例:東京';
+        $('to').placeholder = '例:福岡';
+        $('placeNote').textContent = '都市名(東京・福岡・札幌など)か空港名(羽田・伊丹など)で入れてください。';
+      } else {
+        $('fromLabel').textContent = '出発駅 ※必須';
+        $('toLabel').textContent = '到着駅 ※必須';
+        $('from').placeholder = '例:東京';
+        $('to').placeholder = '例:新大阪';
+        $('placeNote').textContent = '駅名は「東京」「新大阪」のように、「駅」を付けずに入れるのが確実です。';
+      }
+    }
+    document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+    /* ============ 入力の収集と保存 ============ */
+    function collect() {
+      return {
+        mode,
+        traveler: $('traveler').value.trim(),
+        from: stripEki($('from').value),
+        to: stripEki($('to').value),
+        goDate: $('goDate').value, goTime: $('goTime').value, goType: $('goType').value,
+        backDate: $('backDate').value, backTime: $('backTime').value, backType: $('backType').value,
+        stayArea: $('stayArea').value.trim(),
+        visit: $('visit').value.trim(),
+      };
+    }
+    function apply(d) {
+      setMode(d.mode || 'train');
+      $('traveler').value = d.traveler || '';
+      $('from').value = d.from || '';
+      $('to').value = d.to || '';
+      if (d.goDate) $('goDate').value = d.goDate;
+      if (d.goTime) $('goTime').value = d.goTime;
+      if (d.goType) $('goType').value = d.goType;
+      if (d.backDate) $('backDate').value = d.backDate;
+      if (d.backTime) $('backTime').value = d.backTime;
+      if (d.backType) $('backType').value = d.backType;
+      $('stayArea').value = d.stayArea || '';
+      $('visit').value = d.visit || '';
+    }
+
+    /* ============ 入力チェック(安全装置) ============ */
+    function validate(d) {
+      if (!d.from || !d.to) return '出発地と行き先(到着駅)を入れてください。';
+      if (d.from === d.to) return '出発地と行き先が同じです。入力をご確認ください。';
+      if (!d.goDate || !d.backDate) return '行きと帰りの日付を入れてください。';
+      if (d.backDate < d.goDate) return '帰りの日付が、行きの日付より前になっています。';
+      if (d.backDate === d.goDate && d.goTime && d.backTime && d.backTime <= d.goTime) {
+        return '日帰りなのに、帰りの時刻が行きの時刻より前(または同じ)です。';
+      }
+      return null;
+    }
+
+    /* ============ リンクの組み立て ============ */
+    function buildGroups(d) {
+      const groups = [];
+      const nights = nightsBetween(d.goDate, d.backDate);
+      const goLabel = `${jpShort(d.goDate)} ${d.goTime}${typeLabel(d.goType)}`;
+      const backLabel = `${jpShort(d.backDate)} ${d.backTime}${typeLabel(d.backType)}`;
+
+      if (d.mode === 'train') {
+        groups.push({ title: '🚄 経路と時刻(Yahoo!乗換案内)', items: [
+          { name: `行き ${d.from} → ${d.to}`, desc: `${goLabel} / 新幹線・特急を含めて検索`, url: L.yahoo(d.from, d.to, d.goDate, d.goTime, d.goType, false) },
+          { name: `帰り ${d.to} → ${d.from}`, desc: `${backLabel} / 新幹線・特急を含めて検索`, url: L.yahoo(d.to, d.from, d.backDate, d.backTime, d.backType, false) },
+        ]});
+        groups.push({ title: '🎫 新幹線を予約', items: [
+          { name: 'スマートEX', desc: '東海道・山陽・九州新幹線(東京〜博多・鹿児島)。ログインして予約', url: 'https://smart-ex.jp/' },
+          { name: 'えきねっと', desc: 'JR東日本・北海道の新幹線(東北・上越・北陸など)。ログインして予約', url: 'https://www.eki-net.com/' },
+        ]});
+      } else {
+        groups.push({ title: '✈️ 便を探す(Googleフライト)', items: nights > 0
+          ? [{ name: `往復 ${d.from} ⇔ ${d.to}`, desc: `${jpShort(d.goDate)}〜${jpShort(d.backDate)} の往復便を航空会社横断で比較`, url: L.gflight(d.from, d.to, d.goDate, d.backDate) }]
+          : [
+            { name: `行き ${d.from} → ${d.to}(片道)`, desc: `${jpShort(d.goDate)} の便を航空会社横断で比較`, url: L.gflight(d.from, d.to, d.goDate) },
+            { name: `帰り ${d.to} → ${d.from}(片道)`, desc: `${jpShort(d.backDate)} の便を航空会社横断で比較`, url: L.gflight(d.to, d.from, d.backDate) },
+          ]});
+        groups.push({ title: '🚃 空港までの移動も含めた経路(Yahoo!乗換案内)', items: [
+          { name: `行き ${d.from} → ${d.to}`, desc: `${goLabel} / 飛行機・新幹線を含めて検索`, url: L.yahoo(d.from, d.to, d.goDate, d.goTime, d.goType, true) },
+          { name: `帰り ${d.to} → ${d.from}`, desc: `${backLabel} / 飛行機・新幹線を含めて検索`, url: L.yahoo(d.to, d.from, d.backDate, d.backTime, d.backType, true) },
+        ]});
+        groups.push({ title: '🎫 航空券を予約', items: [
+          { name: 'JAL 国内線', desc: 'ログインして予約', url: 'https://www.jal.co.jp/ja-jp/book-dom.html' },
+          { name: 'ANA 国内線', desc: 'ログインして予約', url: 'https://www.ana.co.jp/ja/jp/domestic/' },
+        ]});
+      }
+
+      if (nights > 0) {
+        const area = d.stayArea || (d.mode === 'train' ? `${d.to}駅` : d.to);
+        groups.push({ title: `🏨 ホテル(${nights}泊・${area})`, items: [
+          { name: 'Googleホテル', desc: `${jpShort(d.goDate)}〜${jpShort(d.backDate)} の空室と料金を比較(複数サイト横断)`, url: L.ghotel(area, d.goDate, d.backDate) },
+          { name: '楽天トラベル', desc: '⚠️ 日付は楽天の画面で選んでください(場所だけ引き継ぎます)', url: L.rakuten(area), warn: true },
+        ]});
+      }
+
+      const local = [];
+      if (d.visit) local.push({ name: 'Googleマップ(訪問先)', desc: d.visit, url: L.map(d.visit) });
+      local.push({ name: `${d.to}の天気`, desc: '出発前日に確認しておくと安心', url: L.weather(d.to) });
+      groups.push({ title: '📍 現地', items: local });
+
+      return groups;
+    }
+
+    function renderGroups(groups) {
+      $('linkGroups').innerHTML = groups.map((g, gi) => `
+        <div class="group">
+          <div class="group-head">
+            <span class="group-title">${esc(g.title)}</span>
+            ${g.items.length > 1 ? `<button type="button" class="open-all" data-group="${gi}">まとめて開く</button>` : ''}
+          </div>
+          ${g.items.map(it => `
+            <a class="link-item" href="${esc(it.url)}" target="_blank" rel="noopener">
+              <div class="l-name">${esc(it.name)} ↗</div>
+              <div class="l-desc${it.warn ? ' l-warn' : ''}">${esc(it.desc)}</div>
+            </a>`).join('')}
+        </div>`).join('');
+      $('linkGroups').querySelectorAll('.open-all').forEach(btn => {
+        btn.addEventListener('click', () => openAll(groups[Number(btn.dataset.group)].items.map(i => i.url)));
+      });
+    }
+
+    // まとめて開く:ポップアップがブロックされたら案内する(安全装置)
+    function openAll(urls) {
+      let blocked = 0;
+      urls.forEach(u => {
+        const w = window.open(u, '_blank');
+        if (w) { try { w.opener = null; } catch (e) {} } else { blocked++; }
+      });
+      if (blocked > 0) {
+        alert(`${blocked}件のページが、ブラウザのポップアップブロックで開けませんでした。\n\nアドレスバーの右端に出るアイコンから「このサイトのポップアップを常に許可」を選ぶと、まとめて開けるようになります。\n(許可しなくても、リンクを1つずつクリックすれば開けます)`);
+      }
+    }
+
+    /* ============ 作成ボタン ============ */
+    $('generateBtn').addEventListener('click', () => {
+      const d = collect();
+      const err = validate(d);
+      if (err) { alert(err); return; }
+
+      const today = ymd(new Date());
+      if (d.goDate < today && !confirm('行きの日付が過去になっています。\n日付の入力ミスではありませんか?\n\nこのまま作成しますか?')) return;
+
+      current = d;
+      const nights = nightsBetween(d.goDate, d.backDate);
+      const who = d.traveler ? `${esc(d.traveler)} / ` : '';
+      const stay = nights > 0 ? `${nights}泊${nights + 1}日` : '日帰り';
+      $('tripSummary').innerHTML = `${who}<strong>${esc(d.from)} ⇔ ${esc(d.to)}</strong>(${d.mode === 'plane' ? '飛行機' : '新幹線・電車'})<br>${jpLong(d.goDate)} 〜 ${jpMid(d.backDate)} ・ ${stay}`;
+
+      renderGroups(buildGroups(d));
+      $('hotelDetailField').classList.toggle('hidden', nights === 0);
+
+      $('resultArea').classList.remove('hidden');
+      localStorage.setItem(INPUT_KEY, JSON.stringify(d));
+      saveHistory(d);
+      $('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    /* ============ 行程表 ============ */
+    function buildItinerary(d, v) {
+      const nights = nightsBetween(d.goDate, d.backDate);
+      const stay = nights > 0 ? `${nights}泊${nights + 1}日` : '日帰り';
+      const goDetail = $('goDetail').value.trim();
+      const backDetail = $('backDetail').value.trim();
+      const hotel = nights > 0 ? $('hotelDetail').value.trim() : '';
+      const sched = $('schedule').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const memo = $('memo').value.trim();
+      const TBD = '【未定・確定したら追記】';
+
+      if (v === 'mail') {
+        const L2 = [];
+        if (d.traveler) { L2.push(`${d.traveler}`, ''); }
+        L2.push('出張の行程をお送りいたします。', '');
+        L2.push('■ 日程', `${jpLong(d.goDate)} 〜 ${jpMid(d.backDate)}(${stay})`, `${d.from} ⇔ ${d.to}`, '');
+        L2.push(`■ 行き ${jpMid(d.goDate)}`, goDetail || TBD, '');
+        if (sched.length) { L2.push('■ 訪問・会食の予定', ...sched, ''); }
+        if (nights > 0) { L2.push('■ ご宿泊', hotel || TBD, ''); }
+        L2.push(`■ 帰り ${jpMid(d.backDate)}`, backDetail || TBD, '');
+        if (d.visit && !sched.length) { L2.push('■ 訪問先', d.visit, ''); }
+        if (memo) { L2.push('■ 備考', memo, ''); }
+        L2.push('ご不明な点がございましたら、お申し付けください。');
+        return L2.join('\n');
+      }
+      // チャット用(短く)
+      const L3 = [];
+      L3.push(`【出張行程】${d.traveler ? d.traveler : ''}`.trim());
+      L3.push(`${jpShort(d.goDate)}〜${jpShort(d.backDate)} ${d.from}⇔${d.to}(${stay})`, '');
+      L3.push(`▶行き ${jpShort(d.goDate)}`, goDetail || TBD, '');
+      if (sched.length) { L3.push('▶予定', ...sched, ''); }
+      if (nights > 0) { L3.push('▶宿泊', hotel || TBD, ''); }
+      L3.push(`▶帰り ${jpShort(d.backDate)}`, backDetail || TBD);
+      if (memo) { L3.push('', '▶備考', memo); }
+      return L3.join('\n');
+    }
+
+    function renderItinerary() {
+      if (!current) return;
+      $('itineraryText').value = buildItinerary(current, variant);
+      $('itineraryOut').classList.remove('hidden');
+    }
+    $('itineraryBtn').addEventListener('click', () => {
+      if (!current) { alert('先に上の「出張リンクを作成」を押してください。'); return; }
+      renderItinerary();
+      $('itineraryOut').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      variant = t.dataset.variant;
+      document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+      renderItinerary();
+    }));
+    $('copyBtn').addEventListener('click', async () => {
+      const text = $('itineraryText').value;
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) { $('itineraryText').select(); document.execCommand('copy'); }
+      $('copyStatus').textContent = '✓ コピーしました';
+      setTimeout(() => { $('copyStatus').textContent = ''; }, 2500);
+    });
+
+    /* ============ 出張準備チェックリスト(自分で作れる) ============ */
+    // たたき台。利用者が自由に追加・削除でき、「たたき台に戻す」でここに戻る
+    const DEFAULT_CHECKLIST = [
+      '行き・帰りのチケットを予約した(日付・時刻を予約画面で確認済み)',
+      '宿泊を予約した(チェックイン時刻・キャンセル規定も確認)',
+      '訪問先に、訪問日時の最終確認をした(前日まで)',
+      '現地での移動手段を決めた(タクシー・送迎など)',
+      '名刺(いつもより多めに)',
+      '訪問先の資料・提案書(紙とデータの両方)',
+      '手土産(相手の人数・好み・苦手なものを確認)',
+      '充電器・モバイルバッテリー',
+      '行程表を本人・同行者に送った',
+      '留守中の電話・来客の対応を決めた',
+      '領収書をもらうよう伝えた(交通費・宿泊・会食)',
+    ];
+    let idSeq = 0;
+    const newId = () => 'c' + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 5);
+    const fromTexts = texts => texts.map(text => ({ id: newId(), text, checked: false }));
+
+    function getChecklist() {
+      try {
+        const v = JSON.parse(localStorage.getItem(CHECK_KEY) || 'null');
+        if (Array.isArray(v)) return v;
+      } catch (e) {}
+      const list = fromTexts(DEFAULT_CHECKLIST);   // 初回はたたき台を入れて保存(idを固定するため)
+      saveChecklist(list);
+      return list;
+    }
+    function saveChecklist(list) { localStorage.setItem(CHECK_KEY, JSON.stringify(list)); }
+
+    function renderChecklist() {
+      const list = getChecklist();
+      $('checklist').innerHTML = list.length
+        ? list.map(it => `
+          <div class="check-row">
+            <label class="check-item${it.checked ? ' done' : ''}">
+              <input type="checkbox" data-id="${esc(it.id)}" ${it.checked ? 'checked' : ''}>
+              <span>${esc(it.text)}</span>
+            </label>
+            <button type="button" class="check-del" data-del="${esc(it.id)}" title="この項目を削除" aria-label="削除">×</button>
+          </div>`).join('')
+        : '<div class="check-empty">項目がありません。下の欄から追加してください。</div>';
+      $('checkTotal').textContent = list.length;
+      $('checkDone').textContent = list.filter(it => it.checked).length;
+    }
+
+    function flash(msg) {
+      $('checkStatus').textContent = msg;
+      setTimeout(() => { $('checkStatus').textContent = ''; }, 2500);
+    }
+
+    // 追加:複数行なら1行ずつ。先頭の箇条書き記号(1個だけ)は外し、見出し行【…】と重複は飛ばす
+    // ※「○」は外さない(「○○社は…」のような書き方の先頭を削ってしまうため)
+    function addItems(raw) {
+      const lines = String(raw).split(/\r?\n/)
+        .map(s => s.replace(/^\s*[・\-*☐☑✓✔□■●]\s*/, '').trim())
+        .filter(s => s && !/^【.*】$/.test(s));
+      const list = getChecklist();
+      const existing = new Set(list.map(it => it.text));
+      const fresh = [...new Set(lines)].filter(t => !existing.has(t));
+      if (fresh.length) { saveChecklist(list.concat(fromTexts(fresh))); renderChecklist(); }
+      return fresh.length;
+    }
+
+    $('checkAddBtn').addEventListener('click', () => {
+      const v = $('checkNew').value.trim();
+      if (!v) { $('checkNew').focus(); return; }
+      const n = addItems(v);
+      $('checkNew').value = '';
+      flash(n ? `✓ ${n}件追加しました` : 'その項目はすでにあります');
+    });
+    // Enterで追加。ただし日本語入力の変換確定のEnterでは追加しない
+    $('checkNew').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); $('checkAddBtn').click(); }
+    });
+    // 複数行を貼り付けたら、まとめて追加(後任から受け取ったリストの取り込み)
+    $('checkNew').addEventListener('paste', e => {
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      if (!/\r?\n/.test(text.trim())) return;   // 1行ならふつうに貼り付け
+      e.preventDefault();
+      const n = addItems(text);
+      flash(n ? `✓ ${n}件まとめて追加しました` : 'すべてすでにある項目でした');
+    });
+
+    $('checklist').addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const list = getChecklist();
+      const it = list.find(x => x.id === e.target.dataset.id);
+      if (it) { it.checked = e.target.checked; saveChecklist(list); }
+      renderChecklist();
+    });
+    $('checklist').addEventListener('click', e => {
+      const del = e.target.closest('.check-del');
+      if (!del) return;
+      saveChecklist(getChecklist().filter(x => x.id !== del.dataset.del));
+      renderChecklist();
+    });
+
+    $('checkUncheckBtn').addEventListener('click', () => {
+      saveChecklist(getChecklist().map(it => ({ ...it, checked: false })));
+      renderChecklist();
+      flash('✓ チェックを外しました(項目は残っています)');
+    });
+    $('checkCopyBtn').addEventListener('click', async () => {
+      const list = getChecklist();
+      if (!list.length) { flash('項目がありません'); return; }
+      const text = ['【出張準備チェックリスト】', ...list.map(it => `・${it.text}`)].join('\n');
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      flash('✓ コピーしました(後任や同僚にそのまま渡せます)');
+    });
+    $('checkClearBtn').addEventListener('click', () => {
+      if (!confirm('チェックリストの項目をすべて消します。\n消したあとは、自分で1から作れます。\n\nよろしいですか?')) return;
+      saveChecklist([]);
+      renderChecklist();
+    });
+    $('checkDefaultBtn').addEventListener('click', () => {
+      if (!confirm('いまの項目を消して、たたき台の項目に戻します。\n自分で追加した項目も消えます。\n(残したい項目は、先に「テキストでコピー」で控えてください)\n\nよろしいですか?')) return;
+      saveChecklist(fromTexts(DEFAULT_CHECKLIST));
+      renderChecklist();
+    });
+
+    /* ============ 履歴 ============ */
+    function getHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { return []; } }
+    function saveHistory(d) {
+      const key = `${d.mode}|${d.from}|${d.to}|${d.goDate}|${d.backDate}`;
+      const h = getHistory().filter(x => `${x.mode}|${x.from}|${x.to}|${x.goDate}|${x.backDate}` !== key);
+      h.unshift(d);
+      localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 10)));
+      renderHistory();
+    }
+    function renderHistory() {
+      const h = getHistory();
+      if (!h.length) { $('historyList').innerHTML = '<div class="note">まだ履歴はありません。</div>'; return; }
+      $('historyList').innerHTML = h.map((x, i) => `
+        <div class="history-item">
+          <span class="hi-name" data-idx="${i}">${esc(x.from)} ⇔ ${esc(x.to)}${x.traveler ? `(${esc(x.traveler)})` : ''}</span>
+          <span><span class="note">${esc(jpShort(x.goDate))}〜${esc(jpShort(x.backDate))}</span>
+          <button type="button" class="hi-del" data-del="${i}">削除</button></span>
+        </div>`).join('');
+    }
+    $('historyList').addEventListener('click', e => {
+      const name = e.target.closest('.hi-name');
+      if (name) {
+        const x = getHistory()[Number(name.dataset.idx)];
+        if (x) { apply(x); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        return;
+      }
+      const del = e.target.closest('.hi-del');
+      if (del) {
+        const h = getHistory();
+        h.splice(Number(del.dataset.del), 1);
+        localStorage.setItem(HIST_KEY, JSON.stringify(h));
+        renderHistory();
+      }
+    });
+
+    /* ============ 免責 ============ */
+    $('openDisclaimer').addEventListener('click', () => {
+      alert(
+        '本ツールは無償で提供されるサンプル実装です。\n\n' +
+        '・本ツールは各サイトへのリンクを作るだけで、予約・支払い・空席の確認は行いません\n' +
+        '・リンク先サイトの仕様変更により、日付などの条件が正しく引き継がれない場合があります。予約前に必ずリンク先で内容をご確認ください\n' +
+        '・入力内容はお使いのブラウザ(localStorage)にのみ保存され、外部には送信されません\n' +
+        '・本ツールの利用に起因する一切の損害(予約の誤り・取消料などを含む)について、作者は責任を負いません\n' +
+        '・MITライセンス'
+      );
+    });
+
+    /* ============ 初期化 ============ */
+    (function init() {
+      const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+      const day2 = new Date(tmr); day2.setDate(day2.getDate() + 1);
+      $('goDate').value = ymd(tmr);
+      $('backDate').value = ymd(day2);
+      try {
+        const last = JSON.parse(localStorage.getItem(INPUT_KEY) || 'null');
+        if (last) {
+          // 前回の出発地・行き先・人は引き継ぐ。日付は古い可能性があるので、未来の日付だけ復元
+          const today = ymd(new Date());
+          if (last.goDate < today) { delete last.goDate; delete last.backDate; }
+          apply(last);
+        }
+      } catch (e) {}
+      renderHistory();
+      renderChecklist();
+    })();
+  </script>
+</body>
+</html>
