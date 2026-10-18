@@ -15,7 +15,7 @@
   .helper { background: var(--soft-cream); border-left: 3px solid var(--crimson); padding: 0.6rem 0.8rem; font-size: 0.85rem; color: #555; margin-bottom: 1rem; border-radius: 2px; line-height: 1.5; }
 
   /* タブ */
-  .tabs { display: flex; gap: 0.4rem; margin-bottom: 1.2rem; border-bottom: 2px solid #eee; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; border-bottom: 2px solid #eee; }
   .tab { background: none; border: none; padding: 0.6rem 1.1rem; font-size: 0.95rem; font-weight: 600; color: #999; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
   .tab:hover { color: var(--crimson-dark); }
   .tab.active { color: var(--crimson); border-bottom-color: var(--crimson); }
@@ -112,6 +112,29 @@
   footer a:hover, footer button.link:hover { color: #555; }
   .extra-mark { display: inline-block; background: #555; color: white; padding: 0.05rem 0.3rem; border-radius: 2px; font-size: 0.7rem; margin-right: 0.3rem; }
 
+  /* 固定休(v1.3) */
+  .kt-kid { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+  .kt-kid .kt-name { flex: 1 1 140px; min-width: 120px; }
+  .kt-kid .kt-reason { flex: 1 1 120px; min-width: 100px; }
+  .kt-days { display: flex; gap: 0.2rem; flex-wrap: wrap; }
+  .kt-day { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; border: 1px solid #ccc; border-radius: 50%; font-size: 0.82rem; font-weight: normal; color: #555; cursor: pointer; margin: 0; user-select: none; }
+  .kt-day input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
+  .kt-day:has(input:checked) { background: #fde8e8; border-color: #d0021b; color: #b00020; font-weight: 700; }
+  .kt-day:has(input:focus-visible) { outline: 2px solid var(--crimson); outline-offset: 1px; }
+  .kt-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.4rem; }
+  .kt-btns .add-row { margin-top: 0; }
+  .kt-check-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-size: 1.05rem; font-weight: 700; color: var(--navy); }
+  .kt-check-count { font-size: 0.95rem; color: var(--crimson-dark); background: var(--soft-cream); border-radius: 14px; padding: 0.15rem 0.8rem; }
+  .kt-check-count.done { color: #0b8043; background: #e6f4ea; }
+  .kt-check-sub { font-size: 0.8rem; font-weight: 600; color: #666; margin: 0.9rem 0 0.35rem; }
+  .kt-check-list { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .kt-check-item { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 0.9rem; border: 1px solid #ccc; border-radius: 22px; font-size: 1rem; font-weight: normal; color: #444; background: white; cursor: pointer; margin: 0; user-select: none; }
+  .kt-check-item input { width: auto; margin: 0; }
+  .kt-check-item.came { background: #e6f4ea; border-color: #0b8043; color: #0b8043; font-weight: 600; }
+  .kt-notyet { margin-top: 0.7rem; background: #fff4e1; color: #b76300; padding: 0.55rem 0.8rem; border-radius: 4px; font-size: 0.95rem; line-height: 1.6; }
+  .kt-off { font-size: 1rem; color: #555; line-height: 1.7; }
+  .kt-off .kt-reason-sm { font-size: 0.8rem; color: #999; }
+
   @media (max-width: 600px) {
     body { margin: 1rem auto; }
     h1 { font-size: 1.3rem; }
@@ -135,6 +158,7 @@
     <button type="button" class="tab" data-tab="daily">📋 練習当番</button>
     <button type="button" class="tab" data-tab="event">🏫 自校試合(設営)</button>
     <button type="button" class="tab" data-tab="depo">💰 月謝・集金</button>
+    <button type="button" class="tab" data-tab="kotei">📅 固定休</button>
   </div>
 
   <!-- ============ 校外試合(配車)タブ ============ -->
@@ -446,6 +470,107 @@
           <div id="txHistory"></div>
         </div>
         <div class="note">残高はこの履歴から自動計算されます。「いつ・何で・いくら」が全部残るので、保護者への説明も記録ベースでできます。生成結果・履歴はこのブラウザ内のみ(localStorage)。</div>
+      </div>
+  </div>
+
+  <!-- ============ 固定休タブ(v1.3) ============ -->
+  <div class="tab-panel" id="tab-kotei">
+      <div class="submode-desc">「火曜はほかの習い事があるので基本お休み」── 子どもごとの<strong>固定休(毎週この曜日は来られない)</strong>を登録しておくタブです。当番の日に「今日○○いなくない?」となっても、<strong>固定休なら連絡がなくてもお休み</strong>とすぐ分かります。全員来ているかのチェックと、月間の参加見込みにも使えます。</div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>子どもと固定休(来られない曜日を選ぶ)</label>
+          <div id="ktKidList"></div>
+          <div class="kt-btns">
+            <button type="button" class="add-row" id="ktAddKid">＋ 子どもを追加</button>
+            <button type="button" class="add-row" id="ktLoadKids" style="background:#b0763f;">配車タブの「参加する子」から読み込む</button>
+          </div>
+          <div class="note">来られない曜日だけを選んでください。毎週来られる子は、曜日を選ばずに名前だけでOKです(人数に数えます)。理由は任意です。</div>
+          <div class="kt-btns" style="margin-top:0.8rem;">
+            <button type="button" class="copy-btn" id="ktWeekCopy">📋 曜日ごとの一覧をコピー(LINE用・理由なし)</button>
+            <button type="button" class="copy-btn" id="ktListCopy" style="background:#555;">固定休の一覧をコピー(代表・引き継ぎ用・理由つき)</button>
+            <button type="button" class="add-row" id="ktImportToggle" style="background:#1f6fb2;">📥 LINEで届いた一覧を取り込む</button>
+            <span class="copy-status" id="ktKidStatus"></span>
+          </div>
+          <div class="note">「曜日ごとの一覧」をLINEのノートやピン留めに置いておくと、ツールを持っていない当番の人も、その場で「今日の固定休は誰か」を確認できます。<strong>同じ一覧を「取り込む」に貼り付ければ、ほかの当番の人のスマホにもそのまま登録できます。</strong></div>
+          <div id="ktImportBox" style="display:none; margin-top:0.7rem;">
+            <textarea id="ktImportText" rows="7" placeholder="LINEで届いた「固定休」の一覧を、そのまま貼り付けてください。&#10;(「曜日ごとの一覧」でも「固定休の一覧」でも取り込めます)"></textarea>
+            <div class="kt-btns">
+              <button type="button" class="copy-btn" id="ktImportBtn" style="background:#1f6fb2;">取り込む</button>
+              <button type="button" class="add-row" id="ktImportCancel" style="background:#aaa;">やめる</button>
+            </div>
+            <div class="note">取り込むと、いま登録している内容は、貼り付けた一覧に置き換わります。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日の出欠チェック(当番用) -->
+      <div class="form">
+        <div class="form-block">
+          <label>✅ 出欠チェック(当番のときに)</label>
+          <div class="kt-btns" style="margin-top:0;">
+            <input type="date" id="ktCheckDate" aria-label="チェックする日" style="width:auto;">
+            <button type="button" class="add-row" id="ktToday">今日</button>
+            <button type="button" class="add-row" id="ktCheckReset" style="background:#aaa;">チェックをリセット</button>
+          </div>
+          <div id="ktCheckArea" style="margin-top:0.6rem;"></div>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-block">
+          <label>📅 月間の参加見込み ─ 期間</label>
+          <div class="row">
+            <div><input type="date" id="ktFrom" aria-label="開始日"></div>
+            <div style="align-self:center; flex:0; min-width:auto; padding:0 0.2rem;">〜</div>
+            <div><input type="date" id="ktTo" aria-label="終了日"></div>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <label>練習曜日</label>
+          <div class="weekday-picker" id="ktWeekdays">
+            <label class="wd-chip"><input type="checkbox" value="0">日</label>
+            <label class="wd-chip"><input type="checkbox" value="1">月</label>
+            <label class="wd-chip"><input type="checkbox" value="2">火</label>
+            <label class="wd-chip"><input type="checkbox" value="3">水</label>
+            <label class="wd-chip"><input type="checkbox" value="4">木</label>
+            <label class="wd-chip"><input type="checkbox" value="5" checked>金</label>
+            <label class="wd-chip"><input type="checkbox" value="6" checked>土</label>
+          </div>
+        </div>
+
+        <div class="form-block">
+          <div class="row">
+            <div style="flex:2;">
+              <label>お休み(練習なしの日・任意)</label>
+              <input type="text" id="ktHolidays" placeholder="例:2026-10-13, 2026-10-20(カンマ区切り)">
+            </div>
+            <div style="flex:1;">
+              <label>最低人数(下回る日に⚠️)</label>
+              <input type="number" id="ktMin" min="0" max="99" value="10">
+            </div>
+          </div>
+        </div>
+
+        <div class="kt-btns">
+          <button type="button" class="add-row" id="ktSyncDuty">練習当番タブと同じ期間・曜日にする</button>
+          <span class="copy-status" id="ktSyncStatus"></span>
+        </div>
+        <div class="note">練習当番タブで入れた試合予定は、期間内なら自動で一覧に入ります(試合の日に何人出られるかが分かります)。最低人数を空欄にすると ⚠️ は出ません。</div>
+
+        <button type="button" class="generate-btn" id="ktGenerate">📅 練習日と参加見込みを作る</button>
+      </div>
+
+      <div class="output-section" id="ktOutputSection">
+        <h2>📅 練習日と参加見込み</h2>
+        <textarea class="output-text" id="ktOutput" readonly></textarea>
+        <div class="output-actions">
+          <button type="button" class="copy-btn" id="ktCopy">コピーする</button>
+          <span class="copy-status" id="ktStatus"></span>
+        </div>
+        <div class="warning" id="ktWarning" style="display:none;"></div>
+        <div class="note">日ごとの一覧には、休みの<strong>理由は載せていません</strong>(グループLINEに貼っても、習い事などの個人の事情が出ないように)。理由つきの「固定休の一覧」は、代表の控えと引き継ぎ用です。子どもの名前と予定を含むので、データはこのブラウザ内(localStorage)にのみ保存されます。</div>
       </div>
   </div>
 
@@ -1172,7 +1297,7 @@
       const type = $('txType').value;
       const amount = parseInt($('txAmount').value, 10);
       let label = $('txLabel').value.trim();
-      const date = $('txDate').value || new Date().toISOString().slice(0, 10);
+      const date = $('txDate').value || ymd(new Date());
       if (!famId) { alert('家庭を選択してください'); return; }
       if (!amount || amount <= 0) { alert('金額を入力してください'); return; }
       if (!label) label = type === 'in' ? 'お預かり' : '差引';
@@ -1207,7 +1332,7 @@
       if (!targets.length) { alert('対象の家庭をチェックしてください'); return; }
 
       const depo = getDepo();
-      const date = new Date().toISOString().slice(0, 10);
+      const date = ymd(new Date());
       const preview = targets.map(id => {
         const f = depo.families.find(x => x.id === id);
         const amt = mode === 'perKid' ? amount * (f.kids || 1) : amount;
@@ -1326,10 +1451,352 @@
 
     // 初期化
     (function initDepo() {
-      $('txDate').value = new Date().toISOString().slice(0, 10);
+      $('txDate').value = ymd(new Date());
       const depo = getDepo();
       $('depoThreshold').value = depo.threshold || 1000;
       renderFamilies();
+    })();
+
+    /* ============================================================
+       固定休ロジック(v1.3)
+       子どもごとの「毎週この曜日は来られない」から、練習日ごとの参加見込みを出す
+       ============================================================ */
+    const KOTEI_KEY = 'hishoSpoKoteikyu';
+    const WD_JA = ['日','月','火','水','木','金','土'];
+    let ktSeq = 0;
+    const ktId = () => 'k' + Date.now().toString(36) + (ktSeq++).toString(36);
+
+    function ktLoad() {
+      try { return JSON.parse(localStorage.getItem(KOTEI_KEY) || 'null'); } catch (e) { return null; }
+    }
+    function ktKidsFromDom() {
+      return [...document.querySelectorAll('#ktKidList .kt-kid')].map(r => ({
+        id: r.dataset.id,
+        name: r.querySelector('.kt-name').value.trim(),
+        days: [...r.querySelectorAll('.kt-day input:checked')].map(cb => Number(cb.value)),
+        reason: r.querySelector('.kt-reason').value.trim(),
+      }));
+    }
+    function ktWeekdaysFromDom() {
+      return [...document.querySelectorAll('#ktWeekdays input:checked')].map(cb => Number(cb.value));
+    }
+    function ktSave() {
+      localStorage.setItem(KOTEI_KEY, JSON.stringify({
+        kids: ktKidsFromDom(),
+        from: $('ktFrom').value, to: $('ktTo').value,
+        weekdays: ktWeekdaysFromDom(),
+        holidays: $('ktHolidays').value,
+        minCount: $('ktMin').value,
+      }));
+      ktRenderCheck();   // 名前や曜日が変わったら、出欠チェックも更新
+    }
+    function ktFlash(el, msg) {
+      el.textContent = msg;
+      setTimeout(() => { el.textContent = ''; }, 3000);
+    }
+    async function ktCopyPlain(text, statusEl, msg) {
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      ktFlash(statusEl, msg);
+    }
+
+    /* ---- 出欠チェック(当番用):その日に来る予定の子をタップしていく ---- */
+    const KOTEI_CHECK_KEY = 'hishoSpoKoteiCheck';   // その日の「来た」だけを保存(日付が変わればリセット)
+    function ktGetCheck(date) {
+      try {
+        const c = JSON.parse(localStorage.getItem(KOTEI_CHECK_KEY) || 'null');
+        if (c && c.date === date) return new Set(c.arrived || []);
+      } catch (e) {}
+      return new Set();
+    }
+    function ktSetCheck(date, set) { localStorage.setItem(KOTEI_CHECK_KEY, JSON.stringify({ date, arrived: [...set] })); }
+
+    function ktRenderCheck() {
+      const area = $('ktCheckArea');
+      const date = $('ktCheckDate').value;
+      if (!area || !date) { if (area) area.innerHTML = ''; return; }
+      const kids = ktKidsFromDom().filter(k => k.name);
+      if (!kids.length) { area.innerHTML = '<div class="note">上で子どもの名前を登録すると、ここに出欠チェック表が出ます。</div>'; return; }
+
+      const wd = new Date(date + 'T00:00:00').getDay();
+      const expected = kids.filter(k => !k.days.includes(wd));
+      const off = kids.filter(k => k.days.includes(wd));
+      const arrived = ktGetCheck(date);
+      const came = expected.filter(k => arrived.has(k.id));
+      const notYet = expected.filter(k => !arrived.has(k.id));
+      const allHere = expected.length > 0 && notYet.length === 0;
+
+      const holidays = new Set($('ktHolidays').value.split(/[,、\s]+/).map(s => s.trim()).filter(Boolean));
+      const game = (ktGames().find(g => g.date === date) || {}).name;
+      let notice = '';
+      if (holidays.has(date)) notice = '⚠️ この日は「お休み(練習なし)」に入っています';
+      else if (game) notice = `🏀 この日は試合(${game})です`;
+      else if (!ktWeekdaysFromDom().includes(wd)) notice = 'この曜日は、下の「練習曜日」に入っていません';
+
+      area.innerHTML = `
+        <div class="kt-check-head">${esc(formatDateJP(date))}
+          <span class="kt-check-count${allHere ? ' done' : ''}">${allHere ? '🎉 全員そろいました' : `✓ 来た ${came.length} / ${expected.length}人`}</span>
+        </div>
+        ${notice ? `<div class="note">${esc(notice)}</div>` : ''}
+        <div class="kt-check-sub">来る予定の子(来たらタップ)</div>
+        <div class="kt-check-list">${expected.length
+          ? expected.map(k => `<label class="kt-check-item${arrived.has(k.id) ? ' came' : ''}"><input type="checkbox" data-id="${esc(k.id)}" ${arrived.has(k.id) ? 'checked' : ''}><span>${esc(k.name)}</span></label>`).join('')
+          : '<div class="note">この曜日は全員が固定休です</div>'}</div>
+        ${came.length && notYet.length ? `<div class="kt-notyet">まだ来ていない:<strong>${notYet.map(k => esc(k.name)).join('・')}</strong><br><span style="font-size:0.8rem;">固定休ではないので、連絡がなければ確認を</span></div>` : ''}
+        <div class="kt-check-sub">固定休でお休み(連絡がなくても大丈夫)</div>
+        <div class="kt-off">${off.length
+          ? off.map(k => `${esc(k.name)}${k.reason ? `<span class="kt-reason-sm">(${esc(k.reason)})</span>` : ''}`).join('・')
+          : 'なし'}</div>`;
+    }
+
+    $('ktCheckArea').addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const date = $('ktCheckDate').value;
+      const set = ktGetCheck(date);
+      if (e.target.checked) set.add(e.target.dataset.id); else set.delete(e.target.dataset.id);
+      ktSetCheck(date, set);
+      ktRenderCheck();
+    });
+    $('ktCheckDate').addEventListener('change', ktRenderCheck);
+    $('ktToday').addEventListener('click', () => { $('ktCheckDate').value = ymd(new Date()); ktRenderCheck(); });
+    $('ktCheckReset').addEventListener('click', () => {
+      ktSetCheck($('ktCheckDate').value, new Set());
+      ktRenderCheck();
+    });
+
+    // 曜日ごとの固定休(LINEのノート・ピン留め用。理由は載せない)
+    $('ktWeekCopy').addEventListener('click', () => {
+      const kids = ktKidsFromDom().filter(k => k.name);
+      if (!kids.length) { ktFlash($('ktKidStatus'), '名前が入っていません'); return; }
+      const lines = ['【固定休(毎週この曜日はお休み)】'];
+      [1, 2, 3, 4, 5, 6, 0].forEach(i => {
+        const names = kids.filter(k => k.days.includes(i)).map(k => k.name);
+        if (names.length) lines.push(`${WD_JA[i]}曜:${names.join('・')}`);
+      });
+      // 固定休のない子も載せる(取り込んだときに「来る予定」から漏れて、全員そろったと誤表示しないように)
+      const none = kids.filter(k => !k.days.length).map(k => k.name);
+      if (none.length) lines.push(`固定休なし:${none.join('・')}`);
+      lines.push('', '※ 固定休の子は、連絡がなくてもお休みです');
+      ktCopyPlain(lines.join('\n'), $('ktKidStatus'), '✓ 曜日ごとの一覧をコピーしました(LINEのノートやピン留めに)');
+    });
+
+    /* ---- 一覧の取り込み(ほかの当番の人のスマホへ / 代表の交代の引き継ぎ) ----
+       2つの形を読める:
+       ・曜日ごと  「火曜:田中太郎・佐藤花子」「固定休なし:鈴木一郎」
+       ・子どもごと「田中太郎:毎週 火・金曜(スイミング)」「鈴木一郎:なし」 */
+    function ktParseList(text) {
+      const kids = [], byName = new Map();
+      const get = name => {
+        if (!byName.has(name)) { const k = { name, days: new Set(), reason: '' }; byName.set(name, k); kids.push(k); }
+        return byName.get(name);
+      };
+      const splitNames = s => s.split(/[・、,，]/).map(x => x.trim()).filter(Boolean);
+      String(text).split(/\r?\n/).map(s => s.trim())
+        .filter(s => s && !/^【.*】$/.test(s) && !s.startsWith('※'))
+        .forEach(line => {
+          const m = line.match(/^(.+?)\s*[:：]\s*(.*)$/);
+          if (!m) return;
+          const left = m[1].trim(), right = m[2].trim();
+          if (left === 'お休み') return;   // 月間の参加見込みを貼られた場合の「お休み:…」行は名前ではない
+          const wdm = left.match(/^([日月火水木金土])曜日?$/);
+          if (wdm) { splitNames(right).forEach(n => get(n).days.add(WD_JA.indexOf(wdm[1]))); return; }
+          if (left === '固定休なし') { splitNames(right).forEach(n => get(n)); return; }
+          // 子どもごとの行。理由(かっこ)の中の文字は曜日として読まない(「水泳」の「水」など)
+          const k = get(left);
+          const rm = right.match(/[(（]([^()（）]*)[)）]\s*$/);
+          if (rm) k.reason = rm[1].trim();
+          const body = rm ? right.slice(0, rm.index) : right;
+          (body.match(/[日月火水木金土](?=[・、,，\s]|曜)/g) || []).forEach(c => k.days.add(WD_JA.indexOf(c)));
+        });
+      return kids.map(k => ({ name: k.name, days: [...k.days].sort((a, b) => a - b), reason: k.reason }));
+    }
+
+    $('ktImportToggle').addEventListener('click', () => {
+      const box = $('ktImportBox');
+      box.style.display = box.style.display === 'none' ? '' : 'none';
+      if (box.style.display === '') $('ktImportText').focus();
+    });
+    $('ktImportCancel').addEventListener('click', () => { $('ktImportText').value = ''; $('ktImportBox').style.display = 'none'; });
+    $('ktImportBtn').addEventListener('click', () => {
+      const parsed = ktParseList($('ktImportText').value);
+      if (!parsed.length) { alert('取り込める内容が見つかりませんでした。\nLINEで届いた「固定休」の一覧を、そのまま貼り付けてください。'); return; }
+      const current = ktKidsFromDom().filter(k => k.name).length;
+      if (current && !confirm(`いま登録している${current}人を、貼り付けた一覧の${parsed.length}人に置き換えます。\n\nよろしいですか?`)) return;
+      $('ktKidList').innerHTML = '';
+      parsed.forEach(k => ktAddKidRow(k));
+      ktSave();
+      $('ktImportText').value = '';
+      $('ktImportBox').style.display = 'none';
+      ktFlash($('ktKidStatus'), `✓ ${parsed.length}人を取り込みました`);
+    });
+
+    function ktAddKidRow(k) {
+      k = k || {};
+      const days = Array.isArray(k.days) ? k.days : [];
+      const row = document.createElement('div');
+      row.className = 'kt-kid';
+      row.dataset.id = k.id || ktId();
+      row.innerHTML = `
+        <input type="text" class="kt-name" placeholder="名前(例:田中太郎)" value="${esc(k.name || '')}">
+        <div class="kt-days" role="group" aria-label="来られない曜日">
+          ${WD_JA.map((w, i) => `<label class="kt-day" title="${w}曜は来られない"><input type="checkbox" value="${i}" ${days.includes(i) ? 'checked' : ''}>${w}</label>`).join('')}
+        </div>
+        <input type="text" class="kt-reason" placeholder="理由(任意・例:スイミング)" value="${esc(k.reason || '')}">
+        <button type="button" class="remove-row kt-del" aria-label="この子を一覧から外す">×</button>`;
+      $('ktKidList').appendChild(row);
+      return row;
+    }
+
+    // 入力したら都度保存
+    $('ktKidList').addEventListener('input', ktSave);
+    $('ktKidList').addEventListener('change', ktSave);
+    ['ktFrom', 'ktTo', 'ktHolidays', 'ktMin'].forEach(id => $(id).addEventListener('change', ktSave));
+    $('ktWeekdays').addEventListener('change', ktSave);
+
+    $('ktKidList').addEventListener('click', e => {
+      const del = e.target.closest('.kt-del');
+      if (!del) return;
+      const row = del.closest('.kt-kid');
+      const name = row.querySelector('.kt-name').value.trim();
+      if (name && !confirm(`「${name}」を一覧から外しますか?`)) return;
+      row.remove();
+      if (!document.querySelector('#ktKidList .kt-kid')) ktAddKidRow();
+      ktSave();
+    });
+    $('ktAddKid').addEventListener('click', () => {
+      ktAddKidRow().querySelector('.kt-name').focus();
+      ktSave();
+    });
+
+    // 配車タブの「参加する子」から名前を読み込む(すでにいる名前は重複させない)
+    $('ktLoadKids').addEventListener('click', () => {
+      const names = [...new Set($('kidsList').value.split('\n').map(s => s.trim()).filter(Boolean))];
+      if (!names.length) { alert('配車タブの「参加する子」が空です。先に配車タブで名前を入れてください。'); return; }
+      const have = new Set(ktKidsFromDom().map(k => k.name).filter(Boolean));
+      const fresh = names.filter(n => !have.has(n));
+      const empties = [...document.querySelectorAll('#ktKidList .kt-kid')].filter(r => !r.querySelector('.kt-name').value.trim());
+      fresh.forEach(n => { (empties.shift() || ktAddKidRow()).querySelector('.kt-name').value = n; });
+      ktSave();
+      ktFlash($('ktKidStatus'), fresh.length ? `✓ ${fresh.length}人を読み込みました` : 'すでに全員入っています');
+    });
+
+    // 練習当番タブと同じ期間・曜日・お休みにする
+    function ktSyncFromDuty(silent) {
+      $('ktFrom').value = $('periodFrom').value;
+      $('ktTo').value = $('periodTo').value;
+      const wds = [...document.querySelectorAll('#weekdayPicker input:checked')].map(cb => Number(cb.value));
+      document.querySelectorAll('#ktWeekdays input').forEach(cb => { cb.checked = wds.includes(Number(cb.value)); });
+      $('ktHolidays').value = $('holidayList').value;
+      ktSave();
+      if (!silent) ktFlash($('ktSyncStatus'), '✓ 練習当番タブの期間・曜日・お休みを読み込みました');
+    }
+    $('ktSyncDuty').addEventListener('click', () => ktSyncFromDuty(false));
+
+    // 練習当番タブに入っている試合予定
+    function ktGames() {
+      return [...document.querySelectorAll('#gameList .game-row')]
+        .map(r => ({ date: r.querySelector('.game-date').value, name: r.querySelector('.game-name').value.trim() }))
+        .filter(g => g.date && g.name);
+    }
+
+    $('ktGenerate').addEventListener('click', () => {
+      const kids = ktKidsFromDom().filter(k => k.name);
+      const from = $('ktFrom').value, to = $('ktTo').value;
+      const weekdays = ktWeekdaysFromDom();
+      const holidays = new Set($('ktHolidays').value.split(/[,、\s]+/).map(s => s.trim()).filter(Boolean));
+      const minRaw = $('ktMin').value.trim();
+      const min = minRaw === '' ? 0 : Math.max(0, parseInt(minRaw, 10) || 0);
+
+      if (!kids.length) { alert('子どもの名前を1人以上入れてください。'); return; }
+      if (!from || !to) { alert('期間を入れてください。'); return; }
+      if (from > to) { alert('期間の開始日が、終了日より後になっています。'); return; }
+      if ((new Date(to) - new Date(from)) / 86400000 > 366) { alert('期間が長すぎます。1年以内にしてください。'); return; }
+      if (!weekdays.length) { alert('練習曜日を1つ以上選んでください。'); return; }
+
+      const games = {};
+      ktGames().forEach(g => { if (g.date >= from && g.date <= to) games[g.date] = g.name; });
+
+      // 期間内の練習日・試合の日・お休みを並べる
+      const days = [];
+      for (let d = new Date(from + 'T00:00:00'); ymd(d) <= to; d.setDate(d.getDate() + 1)) {
+        const key = ymd(d), wd = d.getDay();
+        if (games[key]) { days.push({ key, wd, type: 'game', name: games[key] }); continue; }
+        if (!weekdays.includes(wd)) continue;
+        days.push({ key, wd, type: holidays.has(key) ? 'off' : 'practice' });
+      }
+      if (!days.length) { alert('指定された期間・曜日に練習日がありません。条件をご確認ください。'); return; }
+
+      const total = kids.length;
+      let lowCount = 0;
+      const lines = [`【${formatMonthRange(from, to)} 練習日と参加見込み】`, ''];
+      for (const d of days) {
+        const dj = formatDateJP(d.key);
+        if (d.type === 'off') { lines.push(`${dj} お休み`); continue; }
+        const absent = kids.filter(k => k.days.includes(d.wd));
+        const n = total - absent.length;
+        const low = min > 0 && n < min;
+        if (low) lowCount++;
+        const count = `${low ? '⚠️' : ''}参加${n}人${absent.length ? '' : '(全員)'}`;
+        if (d.type === 'game') lines.push('━━━━━━━━━━━━');
+        lines.push(d.type === 'game' ? `${dj} 🏀 ${d.name} ${count}` : `${dj} ${count}`);
+        if (absent.length) lines.push(`　お休み:${absent.map(k => k.name).join('・')}`);
+        if (d.type === 'game') lines.push('━━━━━━━━━━━━');
+      }
+      lines.push('');
+      if (min > 0) lines.push(`⚠️ = 参加が${min}人未満の日`);
+      lines.push(`(登録${total}人・固定休から計算した見込みです。臨時のお休みは含みません)`);
+
+      $('ktOutput').value = lines.join('\n');
+      $('ktOutputSection').classList.add('show');
+
+      const counts = {};
+      kids.forEach(k => { counts[k.name] = (counts[k.name] || 0) + 1; });
+      const dup = Object.keys(counts).filter(nm => counts[nm] > 1);
+      const msgs = [];
+      if (lowCount) msgs.push(`⚠️ 参加が${min}人未満の日が${lowCount}日あります。`);
+      if (dup.length) msgs.push(`同じ名前が2回以上登録されています(${dup.join('・')})。人数が多く数えられているかもしれません。`);
+      const w = $('ktWarning');
+      w.style.display = msgs.length ? '' : 'none';
+      w.textContent = msgs.join(' ');
+
+      ktSave();
+      $('ktOutputSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('ktCopy').addEventListener('click', () => copyText($('ktOutput').value, $('ktStatus')));
+
+    // 固定休の一覧(代表の控え・引き継ぎ用。理由つき)
+    $('ktListCopy').addEventListener('click', () => {
+      const kids = ktKidsFromDom().filter(k => k.name);
+      if (!kids.length) { ktFlash($('ktKidStatus'), '名前が入っていません'); return; }
+      const monFirst = i => (i + 6) % 7;   // 月→日の順で表示
+      const lines = ['【固定休の一覧】'];
+      kids.forEach(k => {
+        const ds = [...k.days].sort((a, b) => monFirst(a) - monFirst(b)).map(i => WD_JA[i]);
+        lines.push(`${k.name}:${ds.length ? `毎週 ${ds.join('・')}曜` : 'なし'}${ds.length && k.reason ? `(${k.reason})` : ''}`);
+      });
+      if (kids.some(k => k.reason) &&
+          !confirm('理由(習い事など)を含む一覧をコピーします。\n個人の事情が含まれるので、グループLINEなどに貼る前に内容をご確認ください。\n\nコピーしますか?')) return;
+      ktCopyPlain(lines.join('\n'), $('ktKidStatus'), '✓ 固定休の一覧をコピーしました(代表の控え・引き継ぎ用)');
+    });
+
+    // 初期化:保存があれば復元。期間が空なら練習当番タブの設定を引き継ぐ
+    (function ktInit() {
+      const s = ktLoad();
+      if (s) {
+        (s.kids || []).forEach(k => ktAddKidRow(k));
+        $('ktFrom').value = s.from || '';
+        $('ktTo').value = s.to || '';
+        if (Array.isArray(s.weekdays)) document.querySelectorAll('#ktWeekdays input').forEach(cb => { cb.checked = s.weekdays.includes(Number(cb.value)); });
+        $('ktHolidays').value = s.holidays || '';
+        if (s.minCount !== undefined) $('ktMin').value = s.minCount;
+      }
+      if (!document.querySelector('#ktKidList .kt-kid')) ktAddKidRow();
+      if (!$('ktFrom').value || !$('ktTo').value) ktSyncFromDuty(true);
+      $('ktCheckDate').value = ymd(new Date());   // 出欠チェックは今日から
+      ktRenderCheck();
     })();
 
     /* ============================================================
@@ -1361,7 +1828,8 @@
         '・🚗 校外試合(配車):遠征の集合案内+配車割を自動生成\n' +
         '・📋 練習当番:期間+曜日で月間の当番を公平ローテ\n' +
         '・🏫 自校試合(設営):開催案内+会場設営など役割分担(希望・常駐考慮)\n' +
-        '・💰 月謝・集金:デポジット式で立替・両替をなくす(残高は取引履歴から自動計算)\n\n' +
+        '・💰 月謝・集金:デポジット式で立替・両替をなくす(残高は取引履歴から自動計算)\n' +
+        '・📅 固定休:子どもごとの来られない曜日から、練習日ごとの参加見込みを計算\n\n' +
         '・入力した情報は外部に送信されません(localStorage完結)\n' +
         '・APIキー不要・登録不要・課金なし\n' +
         '・問い合わせ対応は行っていません(Issue報告は歓迎)\n' +
