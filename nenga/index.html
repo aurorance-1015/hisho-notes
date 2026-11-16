@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秘書ノート / 年賀状リスト管理</title>
+<style>
+  :root {
+    --crimson: #c41e3a; --crimson-dark: #a31830; --navy: #1f2d3d; --soft-cream: #fffbea;
+    --stone-50: #fafaf9; --stone-100: #f5f5f4; --stone-200: #e7e5e4; --stone-300: #d6d3d1;
+    --stone-400: #a8a29e; --stone-500: #78716c; --stone-600: #57534e; --stone-700: #44403c;
+    --danger: #d0021b; --warn: #b45309; --warn-bg: #fff7ed; --ok: #15803d;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", "Meiryo", sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: var(--stone-700); background: var(--stone-50); }
+  .brand { color: var(--stone-500); font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid var(--crimson); padding-bottom: 0.5rem; margin-top: 0.2rem; color: var(--navy); }
+  .subcopy { color: var(--stone-600); font-size: 0.92rem; margin: 0.6rem 0 1rem; line-height: 1.7; }
+  .privacy-box { background: var(--soft-cream); border: 1px solid #f0e2b6; border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.85rem; color: var(--stone-600); line-height: 1.6; margin-bottom: 1.2rem; }
+  .card { background: #fff; border: 1px solid var(--stone-200); border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 1.1rem; }
+  .card > h2 { font-size: 1.05rem; margin: 0 0 0.8rem; color: var(--navy); border-left: 4px solid var(--crimson); padding-left: 0.55rem; }
+  label { display: block; font-size: 0.82rem; color: var(--stone-600); margin-bottom: 0.25rem; }
+  input[type=text], input[type=date], select, textarea { width: 100%; padding: 0.5rem 0.6rem; border: 1px solid var(--stone-300); border-radius: 5px; font-size: 0.95rem; font-family: inherit; color: var(--stone-700); background: #fff; }
+  textarea { resize: vertical; min-height: 5.5rem; line-height: 1.6; }
+  .row { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .field { flex: 1 1 12rem; min-width: 0; }
+  .field.narrow { flex: 0 0 7.5rem; }
+  .note { font-size: 0.78rem; color: var(--stone-500); margin-top: 0.3rem; line-height: 1.7; }
+  button { font-family: inherit; cursor: pointer; border-radius: 5px; font-size: 0.9rem; }
+  .btn-main { background: var(--crimson); color: #fff; border: none; padding: 0.6rem 1.1rem; font-weight: 600; }
+  .btn-main:hover { background: var(--crimson-dark); }
+  .btn-sub { background: var(--stone-100); color: var(--stone-700); border: 1px solid var(--stone-300); padding: 0.45rem 0.8rem; }
+  .btn-sub:hover { background: var(--stone-200); }
+  .btn-copy { background: var(--navy); color: #fff; border: none; padding: 0.55rem 0.95rem; }
+  .btn-danger { background: #fff; color: var(--danger); border: 1px solid #f0c0c6; padding: 0.4rem 0.7rem; font-size: 0.82rem; }
+  .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+  .hidden { display: none !important; }
+
+  .year-bar { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+  .year-pick { font-size: 1.1rem; font-weight: 700; color: var(--navy); }
+  .year-hint { font-size: 0.78rem; color: var(--stone-500); font-weight: 400; }
+  .summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+  .pill { font-size: 0.84rem; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-300); background: var(--stone-100); color: var(--stone-600); }
+  .pill.send { background: #f0fdf4; border-color: #bbf7d0; color: var(--ok); font-weight: 600; }
+  .pill.mourn { background: #fef2f2; border-color: #fecaca; color: var(--danger); font-weight: 600; }
+  .pill.warn { background: var(--warn-bg); border-color: #fed7aa; color: var(--warn); font-weight: 600; }
+
+  .banner { border-radius: 6px; padding: 0.8rem 0.95rem; font-size: 0.88rem; line-height: 1.8; margin-top: 0.9rem; }
+  .banner.mourn-back { background: var(--warn-bg); border: 1px solid #fed7aa; color: var(--warn); }
+
+  .search-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.8rem; }
+  .search-row input[type=text] { flex: 1 1 14rem; }
+  .filter-btn { background: var(--stone-100); border: 1px solid var(--stone-300); color: var(--stone-600); padding: 0.4rem 0.75rem; font-size: 0.84rem; }
+  .filter-btn.on { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 600; }
+
+  .plist { display: flex; flex-direction: column; gap: 0.6rem; }
+  .pitem { border: 1px solid var(--stone-200); border-radius: 7px; padding: 0.7rem 0.85rem; background: #fff; }
+  .pitem.is-mourn { border-color: #fecaca; background: #fffafa; }
+  .pitem.is-stale { border-left: 4px solid var(--warn); }
+  .pname { font-size: 1rem; font-weight: 700; color: var(--navy); }
+  .pname .honor { font-weight: 400; font-size: 0.85rem; color: var(--stone-500); }
+  .porg { font-size: 0.86rem; color: var(--stone-600); margin-top: 0.15rem; }
+  .paddr { font-size: 0.82rem; color: var(--stone-500); margin-top: 0.25rem; }
+  .pmeta { font-size: 0.78rem; color: var(--stone-500); margin-top: 0.35rem; display: flex; gap: 0.9rem; flex-wrap: wrap; }
+  .badge { font-size: 0.74rem; padding: 0.12rem 0.5rem; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .badge.mourn { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+  .badge.stale { background: var(--warn-bg); color: var(--warn); border: 1px solid #fed7aa; }
+  .badge.ret { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+  .badge.recv { background: #f0fdf4; color: var(--ok); border: 1px solid #bbf7d0; }
+  .pctl { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.55rem; }
+  .pctl select { width: auto; font-size: 0.84rem; padding: 0.3rem 0.5rem; }
+  .pctl label.inline { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.84rem; margin: 0; color: var(--stone-600); cursor: pointer; }
+  .empty { color: var(--stone-500); font-size: 0.9rem; padding: 1.2rem 0; text-align: center; line-height: 1.8; }
+
+  .history { font-size: 0.78rem; color: var(--stone-500); margin: -0.3rem 0 0.7rem; line-height: 1.7; }
+  .output-text { width: 100%; min-height: 9rem; font-family: ui-monospace, "Consolas", monospace; font-size: 0.82rem; line-height: 1.7; }
+  .caution { background: var(--warn-bg); border: 1px solid #fed7aa; color: var(--warn); border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.85rem; line-height: 1.8; margin-bottom: 0.8rem; }
+  .status { font-size: 0.85rem; color: var(--ok); }
+  footer { margin-top: 2.2rem; padding-top: 1rem; border-top: 1px solid var(--stone-200); font-size: 0.8rem; color: var(--stone-500); line-height: 1.9; }
+  footer a { color: var(--stone-600); }
+  @media (max-width: 600px) {
+    body { margin: 1rem auto; }
+    .field.narrow { flex: 1 1 7rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="brand">秘書ノート <span style="opacity:.6">Hisho Notes</span></div>
+<h1>年賀状リスト管理</h1>
+<p class="subcopy">
+  🎍 年賀状は、相手の最新の住所と肩書きが<strong>向こうから届く日</strong>です。<br>
+  受け取ったその場で記録しておかないと、1年後にまた去年のまま出すことになります。<br>
+  <strong>喪中の方を外す</strong>のも、<strong>翌年にちゃんと戻す</strong>のも、仕組みでやります。
+</p>
+
+<div class="privacy-box">
+  🔒 入力した情報は<strong>この端末のブラウザの中にだけ</strong>保存されます。どこにも送信されません。<br>
+  住所録は個人情報のかたまりです。共用のパソコンでお使いの場合はご注意ください。バックアップの書き出しもご用意しています。
+</div>
+
+<div class="card">
+  <div class="year-bar">
+    <span class="year-pick"><select id="yearSel" style="width:auto;font-size:1.05rem;font-weight:700;"></select> 年用</span>
+    <span class="year-hint" id="yearHint"></span>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div id="mournBack"></div>
+</div>
+
+<div class="card">
+  <h2>宛先リスト</h2>
+  <div class="search-row">
+    <input type="text" id="q" placeholder="名前・会社・住所で絞り込み">
+    <button type="button" class="filter-btn" id="fAll">すべて</button>
+    <button type="button" class="filter-btn" id="fSend">出す</button>
+    <button type="button" class="filter-btn" id="fMourn">喪中</button>
+    <button type="button" class="filter-btn" id="fStale">⚠️ 要確認</button>
+  </div>
+  <div class="plist" id="plist"></div>
+</div>
+
+<div class="card">
+  <h2 id="formTitle">宛先を追加</h2>
+  <input type="hidden" id="editId">
+  <div class="row">
+    <div class="field"><label for="f-name">お名前 ※必須</label><input type="text" id="f-name" placeholder="例:山田 太郎"></div>
+    <div class="field narrow"><label for="f-honor">敬称</label>
+      <select id="f-honor"><option>様</option><option>御中</option><option>先生</option><option>(なし)</option></select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="f-company">会社名</label><input type="text" id="f-company" placeholder="例:株式会社○○商事"></div>
+    <div class="field"><label for="f-dept">部署</label><input type="text" id="f-dept" placeholder="例:営業本部"></div>
+    <div class="field"><label for="f-title">役職</label><input type="text" id="f-title" placeholder="例:執行役員"></div>
+  </div>
+  <div class="history" id="titleHist"></div>
+  <div class="row">
+    <div class="field narrow"><label for="f-zip">郵便番号</label><input type="text" id="f-zip" placeholder="100-0001"></div>
+    <div class="field"><label for="f-addr1">住所1</label><input type="text" id="f-addr1" placeholder="東京都千代田区千代田1-1"></div>
+    <div class="field"><label for="f-addr2">住所2(建物名など)</label><input type="text" id="f-addr2" placeholder="○○ビル10F"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="f-sender">差出人の名義</label>
+      <input type="text" id="f-sender" list="senderList" placeholder="例:会社名義 / 代表個人名義">
+      <datalist id="senderList"></datalist>
+    </div>
+    <div class="field"><label for="f-conf">最終確認日</label><input type="date" id="f-conf"></div>
+    <div class="field"><label for="f-memo">メモ</label><input type="text" id="f-memo" placeholder="例:前職からのお付き合い"></div>
+  </div>
+  <p class="note">
+    <strong>最終確認日</strong>は「この住所と肩書きで間違いない」と分かった日です。名刺をいただいた日、異動のご挨拶が届いた日、年賀状が届いた日など。2年以上たつと ⚠️ が付きます。
+  </p>
+  <div class="actions">
+    <button type="button" class="btn-main" id="saveBtn">保存する</button>
+    <button type="button" class="btn-sub hidden" id="cancelBtn">編集をやめる</button>
+    <span class="status hidden" id="saveStatus">保存しました</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>いまの住所録を取り込む</h2>
+  <p class="note" style="margin-top:0">
+    Excelやスプレッドシートの住所録を、<strong>見出しの行ごとそのままコピーして</strong>下に貼り付けてください。タブ区切り・カンマ区切りのどちらでも読み取ります。<br>
+    見出しは「氏名 / 名前 / お名前」「会社 / 会社名」「部署」「役職 / 肩書」「郵便番号 / 〒」「住所 / 住所1」「住所2 / 建物」「敬称」「差出人 / 名義」「メモ / 備考」を見ています。
+  </p>
+  <textarea id="importText" class="output-text" placeholder="氏名	会社名	役職	郵便番号	住所
+山田 太郎	株式会社○○商事	営業部長	100-0001	東京都千代田区千代田1-1"></textarea>
+  <div class="actions" style="margin-top:0.6rem">
+    <button type="button" class="btn-sub" id="importBtn">貼り付けた内容を取り込む</button>
+    <span class="status hidden" id="importStatus"></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>書き出す</h2>
+  <div class="caution">
+    ⚠️ 書き出したファイルには、氏名と住所がそのまま入ります。<strong>共有フォルダやデスクトップに置いたままにしない</strong>でください。年賀状ソフトに取り込んだら消すのが安全です。
+  </div>
+  <div class="actions">
+    <button type="button" class="btn-main" id="csvBtn">年賀状ソフト用のCSVを書き出す</button>
+    <button type="button" class="btn-copy" id="listBtn">「出す人」の一覧をコピー(住所なし)</button>
+  </div>
+  <p class="note">CSVには<strong>「出す」の方だけ</strong>が入ります。喪中・出さないの方は必ず外れます。書き出す前に内訳をお見せします。</p>
+  <textarea id="outText" class="output-text hidden" readonly></textarea>
+
+  <h2 style="margin-top:1.5rem">バックアップ</h2>
+  <div class="actions">
+    <button type="button" class="btn-sub" id="backupBtn">バックアップを書き出す(JSON)</button>
+    <button type="button" class="btn-sub" id="restoreBtn">バックアップから戻す</button>
+    <input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
+  </div>
+  <p class="note">パソコンを買い替えるとき・ブラウザのデータを消すときは、先に書き出しておいてください。</p>
+</div>
+
+<footer>
+  秘書ノート 第7作 ─ 役員秘書・経営者・士業のための業務ツール集<br>
+  このツールは無料でお使いいただけます。<strong>ご利用によって生じた問題について、弊社は責任を負いかねます。</strong>宛先は必ず最後にご自身の目でご確認ください。<br>
+  <a href="https://github.com/aurorance-1015/hisho-notes" target="_blank" rel="noopener">GitHub</a> ・
+  <a href="https://aurorance.biz/" target="_blank" rel="noopener">aurorance.biz</a>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'hishoNenga';
+  var SCHEMA_VERSION = 1;
+  var STALE_DAYS = 730;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return { version: SCHEMA_VERSION, people: [] };
+      var d = JSON.parse(raw);
+      if (!d || !Array.isArray(d.people)) return { version: SCHEMA_VERSION, people: [] };
+      return d;
+    } catch (e) { return { version: SCHEMA_VERSION, people: [] }; }
+  }
+  function save(d) {
+    d.version = SCHEMA_VERSION;
+    try { localStorage.setItem(KEY, JSON.stringify(d)); }
+    catch (e) { alert('保存できませんでした。ブラウザの保存容量がいっぱいかもしれません。'); }
+  }
+  var data = load();
+
+  function ymd(dt) {
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+  }
+  function today() { return ymd(new Date()); }
+  function daysSince(s) {
+    if (!s) return Infinity;
+    var t = Date.parse(s + 'T00:00:00');
+    if (isNaN(t)) return Infinity;
+    return Math.floor((Date.now() - t) / 86400000);
+  }
+  function defaultYear() {
+    var n = new Date();
+    return n.getMonth() >= 9 ? n.getFullYear() + 1 : n.getFullYear();
+  }
+  var year = defaultYear();
+  var filter = 'all';
+
+  function yr(p, y) {
+    if (!p.years) p.years = {};
+    if (!p.years[y]) p.years[y] = { plan: 'send', reason: '', received: false, returned: false };
+    return p.years[y];
+  }
+  function planOf(p, y) { return yr(p, y).plan || 'send'; }
+  function isStale(p) { return daysSince(p.lastConfirmed) > STALE_DAYS; }
+  function honorOf(p) { return p.honor === '(なし)' ? '' : (p.honor || '様'); }
+  function fullTitle(p) { return [p.dept, p.title].filter(Boolean).join(' '); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function matched() {
+    var q = ($('q').value || '').trim().toLowerCase();
+    return data.people.filter(function (p) {
+      if (q) {
+        var hay = [p.name, p.company, p.dept, p.title, p.addr1, p.addr2, p.memo].join(' ').toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      var pl = planOf(p, year);
+      if (filter === 'send') return pl === 'send';
+      if (filter === 'mourn') return pl === 'mourning';
+      if (filter === 'stale') return isStale(p);
+      return true;
+    });
+  }
+
+  function renderList() {
+    var box = $('plist');
+    if (!data.people.length) {
+      box.innerHTML = '<div class="empty">まだ宛先がありません。<br>下の「宛先を追加」か、「いまの住所録を取り込む」からどうぞ。</div>';
+      return;
+    }
+    var list = matched();
+    if (!list.length) { box.innerHTML = '<div class="empty">条件に合う宛先がありません。</div>'; return; }
+    box.innerHTML = list.map(function (p) {
+      var y = yr(p, year), pl = planOf(p, year), stale = isStale(p);
+      var badges = [];
+      if (pl === 'mourning') badges.push('<span class="badge mourn">喪中</span>');
+      if (stale) badges.push('<span class="badge stale">⚠️ ' + (p.lastConfirmed ? '2年以上確認していません' : '確認日が未記入') + '</span>');
+      if (y.returned) badges.push('<span class="badge ret">戻ってきた</span>');
+      if (y.received) badges.push('<span class="badge recv">届いた</span>');
+      var org = [p.company, fullTitle(p)].filter(Boolean).join(' / ');
+      var addr = [p.zip ? '〒' + p.zip : '', p.addr1, p.addr2].filter(Boolean).join(' ');
+      return '<div class="pitem' + (pl === 'mourning' ? ' is-mourn' : '') + (stale ? ' is-stale' : '') + '" data-id="' + esc(p.id) + '">'
+        + '<div class="pname">' + esc(p.name) + ' <span class="honor">' + esc(honorOf(p)) + '</span> ' + badges.join(' ') + '</div>'
+        + (org ? '<div class="porg">' + esc(org) + '</div>' : '')
+        + (addr ? '<div class="paddr">' + esc(addr) + '</div>' : '')
+        + '<div class="pmeta"><span>最終確認:' + esc(p.lastConfirmed || '未記入') + '</span>'
+        + (p.sender ? '<span>名義:' + esc(p.sender) + '</span>' : '') + '</div>'
+        + '<div class="pctl">'
+        + '<select class="js-plan" aria-label="今年どうするか">'
+        + '<option value="send"' + (pl === 'send' ? ' selected' : '') + '>出す</option>'
+        + '<option value="skip"' + (pl === 'skip' ? ' selected' : '') + '>出さない</option>'
+        + '<option value="mourning"' + (pl === 'mourning' ? ' selected' : '') + '>喪中</option>'
+        + '</select>'
+        + '<label class="inline"><input type="checkbox" class="js-recv"' + (y.received ? ' checked' : '') + '>届いた</label>'
+        + '<label class="inline"><input type="checkbox" class="js-ret"' + (y.returned ? ' checked' : '') + '>戻ってきた</label>'
+        + '<button type="button" class="btn-sub js-fresh">今の情報で合っていた</button>'
+        + '<button type="button" class="btn-sub js-edit">編集</button>'
+        + '<button type="button" class="btn-danger js-del">削除</button>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  function renderSummary() {
+    var send = 0, mourn = 0, skip = 0, stale = 0;
+    data.people.forEach(function (p) {
+      var pl = planOf(p, year);
+      if (pl === 'send') send++; else if (pl === 'mourning') mourn++; else skip++;
+      if (isStale(p)) stale++;
+    });
+    $('summary').innerHTML = '<span class="pill send">出す ' + send + '名</span>'
+      + '<span class="pill mourn">喪中 ' + mourn + '名</span>'
+      + '<span class="pill">出さない ' + skip + '名</span>'
+      + (stale ? '<span class="pill warn">⚠️ 要確認 ' + stale + '名</span>' : '')
+      + '<span class="pill">登録 ' + data.people.length + '名</span>';
+    $('yearHint').textContent = '(' + (year - 1) + '年の年末に出すぶんです)';
+
+    var back = data.people.filter(function (p) {
+      var prev = p.years && p.years[year - 1];
+      return prev && prev.plan === 'mourning' && planOf(p, year) !== 'mourning';
+    });
+    $('mournBack').innerHTML = back.length
+      ? '<div class="banner mourn-back">🕊️ <strong>昨年(' + (year - 1) + '年)は喪中だった方が' + back.length + '名います。</strong>'
+        + '今年は喪中が明けているので、<strong>「出す」に戻しています</strong>。<br>'
+        + back.map(function (p) { return esc(p.name) + esc(honorOf(p)); }).join('・')
+        + '<br>出さない方がいれば、下のリストで「出さない」に変えてください。</div>'
+      : '';
+  }
+
+  function renderSenders() {
+    var seen = {}, out = [];
+    data.people.forEach(function (p) { if (p.sender && !seen[p.sender]) { seen[p.sender] = 1; out.push(p.sender); } });
+    $('senderList').innerHTML = out.map(function (s) { return '<option value="' + esc(s) + '">'; }).join('');
+  }
+
+  function render() { renderSummary(); renderList(); renderSenders(); }
+
+  function buildYears() {
+    var base = defaultYear(), set = {};
+    [base - 1, base, base + 1, year].forEach(function (y) { set[y] = 1; });
+    data.people.forEach(function (p) {
+      if (p.years) Object.keys(p.years).forEach(function (y) { if (!isNaN(parseInt(y, 10))) set[parseInt(y, 10)] = 1; });
+    });
+    var arr = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+    $('yearSel').innerHTML = arr.map(function (y) {
+      return '<option value="' + y + '"' + (y === year ? ' selected' : '') + '>' + y + '</option>';
+    }).join('');
+  }
+
+  var FORM_IDS = ['f-name', 'f-company', 'f-dept', 'f-title', 'f-zip', 'f-addr1', 'f-addr2', 'f-sender', 'f-memo'];
+  function clearForm() {
+    FORM_IDS.forEach(function (id) { $(id).value = ''; });
+    $('f-honor').value = '様';
+    $('f-conf').value = today();
+    $('editId').value = '';
+    $('formTitle').textContent = '宛先を追加';
+    $('cancelBtn').classList.add('hidden');
+    $('titleHist').innerHTML = '';
+  }
+  function renderHist(p) {
+    var h = (p && p.titleHistory) || [];
+    $('titleHist').innerHTML = h.length
+      ? '役職の履歴:' + h.map(function (x) { return esc(x.year) + '年 ' + esc(x.title || '(未記入)'); }).join(' → ') + ' → <strong>いま</strong>'
+      : '';
+  }
+  function fillForm(p) {
+    $('editId').value = p.id;
+    $('f-name').value = p.name || '';
+    $('f-honor').value = p.honor || '様';
+    $('f-company').value = p.company || '';
+    $('f-dept').value = p.dept || '';
+    $('f-title').value = p.title || '';
+    $('f-zip').value = p.zip || '';
+    $('f-addr1').value = p.addr1 || '';
+    $('f-addr2').value = p.addr2 || '';
+    $('f-sender').value = p.sender || '';
+    $('f-memo').value = p.memo || '';
+    $('f-conf').value = p.lastConfirmed || '';
+    $('formTitle').textContent = p.name + ' さんを編集';
+    $('cancelBtn').classList.remove('hidden');
+    renderHist(p);
+    if ($('f-name').scrollIntoView) $('f-name').scrollIntoView({ block: 'center' });
+  }
+
+  function saveForm() {
+    var name = $('f-name').value.trim();
+    if (!name) { alert('お名前を入れてください。'); $('f-name').focus(); return; }
+    var id = $('editId').value;
+    var nt = $('f-title').value.trim(), nd = $('f-dept').value.trim();
+    var p;
+    if (id) {
+      p = data.people.filter(function (x) { return x.id === id; })[0];
+      if (!p) { clearForm(); return; }
+      var oldFull = [p.dept, p.title].filter(Boolean).join(' ');
+      var newFull = [nd, nt].filter(Boolean).join(' ');
+      if (oldFull && oldFull !== newFull) {
+        if (!p.titleHistory) p.titleHistory = [];
+        p.titleHistory.push({ year: new Date().getFullYear(), title: oldFull });
+        if (p.titleHistory.length > 10) p.titleHistory = p.titleHistory.slice(-10);
+      }
+    } else {
+      p = { id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7), years: {}, titleHistory: [] };
+      data.people.push(p);
+    }
+    p.name = name;
+    p.honor = $('f-honor').value;
+    p.company = $('f-company').value.trim();
+    p.dept = nd;
+    p.title = nt;
+    p.zip = $('f-zip').value.trim();
+    p.addr1 = $('f-addr1').value.trim();
+    p.addr2 = $('f-addr2').value.trim();
+    p.sender = $('f-sender').value.trim();
+    p.memo = $('f-memo').value.trim();
+    p.lastConfirmed = $('f-conf').value;
+    save(data); clearForm(); buildYears(); render();
+    var s = $('saveStatus');
+    s.classList.remove('hidden');
+    setTimeout(function () { s.classList.add('hidden'); }, 1800);
+  }
+
+  var HEAD = {
+    name: ['氏名', '名前', 'お名前', '宛名', 'name'],
+    honor: ['敬称'],
+    company: ['会社', '会社名', '勤務先', '団体名'],
+    dept: ['部署', '所属'],
+    title: ['役職', '肩書', '肩書き'],
+    zip: ['郵便番号', '〒', 'zip', '郵便'],
+    addr1: ['住所', '住所1', '住所１'],
+    addr2: ['住所2', '住所２', '建物', '建物名', 'ビル名'],
+    sender: ['差出人', '名義', '差出人名義'],
+    memo: ['メモ', '備考']
+  };
+  function splitLine(line) { return line.indexOf('\t') >= 0 ? line.split('\t') : line.split(','); }
+  function unq(s) { return String(s == null ? '' : s).trim().replace(/^["']|["']$/g, '').trim(); }
+
+  function importPaste() {
+    var raw = $('importText').value;
+    var lines = raw.split('\n').map(function (s) { return s.replace(/\r$/, ''); }).filter(function (s) { return s.trim(); });
+    if (lines.length < 2) { alert('見出しの行と、少なくとも1件のデータを貼り付けてください。'); return; }
+    var head = splitLine(lines[0]).map(unq);
+    var map = {};
+    head.forEach(function (h, i) {
+      for (var k in HEAD) {
+        if (map[k] !== undefined) continue;
+        for (var j = 0; j < HEAD[k].length; j++) {
+          if (h === HEAD[k][j] || h.toLowerCase() === HEAD[k][j].toLowerCase()) { map[k] = i; break; }
+        }
+      }
+    });
+    if (map.name === undefined) {
+      alert('「氏名」「名前」「お名前」のどれかの見出しが見つかりませんでした。\n1行目に見出しの行が入っているか確認してください。');
+      return;
+    }
+    var added = 0, dup = 0;
+    var keyOf = function (n, c) { return (n || '').trim() + '|' + (c || '').trim(); };
+    var exist = {};
+    data.people.forEach(function (p) { exist[keyOf(p.name, p.company)] = 1; });
+    lines.slice(1).forEach(function (line) {
+      var cols = splitLine(line);
+      var g = function (k) { return map[k] === undefined ? '' : unq(cols[map[k]]); };
+      var name = g('name');
+      if (!name) return;
+      var company = g('company');
+      if (exist[keyOf(name, company)]) { dup++; return; }
+      exist[keyOf(name, company)] = 1;
+      data.people.push({
+        id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7),
+        name: name, honor: g('honor') || '様', company: company, dept: g('dept'), title: g('title'),
+        zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), sender: g('sender'), memo: g('memo'),
+        lastConfirmed: '', years: {}, titleHistory: []
+      });
+      added++;
+    });
+    if (!added && !dup) { alert('取り込めるデータが見つかりませんでした。'); return; }
+    save(data); buildYears(); render();
+    $('importText').value = '';
+    var st = $('importStatus');
+    st.textContent = added + '名を取り込みました'
+      + (dup ? '(同じお名前と会社の' + dup + '名は飛ばしました)' : '')
+      + '。最終確認日が未記入なので ⚠️ が付きます。';
+    st.classList.remove('hidden');
+  }
+
+  function csvCell(s) {
+    var v = String(s == null ? '' : s);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function exportCSV() {
+    var send = [], mourn = [], skip = [];
+    data.people.forEach(function (p) {
+      var pl = planOf(p, year);
+      if (pl === 'send') send.push(p); else if (pl === 'mourning') mourn.push(p); else skip.push(p);
+    });
+    if (!send.length) { alert('「出す」の方がいません。'); return; }
+    var stale = send.filter(isStale);
+    var msg = year + '年用のCSVを書き出します。\n\n  出す:' + send.length + '名\n';
+    if (mourn.length) {
+      msg += '  喪中のため外す:' + mourn.length + '名\n    '
+        + mourn.map(function (p) { return p.name + honorOf(p); }).join('・') + '\n';
+    }
+    if (skip.length) msg += '  出さない:' + skip.length + '名\n';
+    if (stale.length) {
+      msg += '\n⚠️ 出す方のうち' + stale.length + '名は、2年以上確認していません。\n    '
+        + stale.map(function (p) { return p.name; }).join('・')
+        + '\n   住所や肩書きが変わっているかもしれません。\n';
+    }
+    msg += '\nこの内容で書き出しますか?';
+    if (!confirm(msg)) return;
+    var head = ['氏名', '敬称', '郵便番号', '住所1', '住所2', '会社名', '部署', '役職', '差出人名義', 'メモ'];
+    var rows = send.map(function (p) {
+      return [p.name, honorOf(p), p.zip, p.addr1, p.addr2, p.company, p.dept, p.title, p.sender, p.memo].map(csvCell).join(',');
+    });
+    var csv = '﻿' + [head.join(',')].concat(rows).join('\r\n');
+    download(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'nenga-' + year + '.csv');
+  }
+  function download(blob, filename) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function copySendList() {
+    var send = data.people.filter(function (p) { return planOf(p, year) === 'send'; });
+    if (!send.length) { alert('「出す」の方がいません。'); return; }
+    var groups = {}, order = [];
+    send.forEach(function (p) {
+      var k = p.sender || '(名義の指定なし)';
+      if (!groups[k]) { groups[k] = []; order.push(k); }
+      groups[k].push(p);
+    });
+    var lines = ['【' + year + '年 年賀状を出す方】 計' + send.length + '名', ''];
+    order.forEach(function (k) {
+      lines.push('■ ' + k + '(' + groups[k].length + '名)');
+      groups[k].forEach(function (p) {
+        var org = [p.company, fullTitle(p)].filter(Boolean).join(' ');
+        lines.push('　' + p.name + honorOf(p) + (org ? '(' + org + ')' : '') + (isStale(p) ? ' ⚠️要確認' : ''));
+      });
+      lines.push('');
+    });
+    var mourn = data.people.filter(function (p) { return planOf(p, year) === 'mourning'; });
+    if (mourn.length) lines.push('※ 喪中のため外した方:' + mourn.length + '名');
+    lines.push('※ 住所は入れていません。確認用の一覧です。');
+    var text = lines.join('\n');
+    $('outText').value = text;
+    $('outText').classList.remove('hidden');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function () {});
+  }
+
+  function backup() {
+    var payload = { version: SCHEMA_VERSION, exportedAt: new Date().toISOString(), people: data.people };
+    download(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), 'nenga-backup-' + today() + '.json');
+  }
+  function restore(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var d = JSON.parse(r.result);
+        if (!d || !Array.isArray(d.people)) { alert('このファイルは年賀状リストのバックアップではないようです。'); return; }
+        if (!confirm('いま登録されている' + data.people.length + '名を、ファイルの' + d.people.length + '名で置き換えます。\nこの操作は元に戻せません。よろしいですか?')) return;
+        data = { version: SCHEMA_VERSION, people: d.people };
+        save(data); buildYears(); render();
+        alert(d.people.length + '名を読み込みました。');
+      } catch (e) { alert('ファイルを読み取れませんでした。'); }
+    };
+    r.readAsText(file);
+  }
+
+  $('yearSel').addEventListener('change', function (e) { year = parseInt(e.target.value, 10); render(); });
+  $('q').addEventListener('input', renderList);
+  [['fAll', 'all'], ['fSend', 'send'], ['fMourn', 'mourn'], ['fStale', 'stale']].forEach(function (pair) {
+    $(pair[0]).addEventListener('click', function () {
+      filter = pair[1];
+      ['fAll', 'fSend', 'fMourn', 'fStale'].forEach(function (x) { $(x).classList.remove('on'); });
+      $(pair[0]).classList.add('on');
+      renderList();
+    });
+  });
+  $('saveBtn').addEventListener('click', saveForm);
+  $('cancelBtn').addEventListener('click', clearForm);
+  $('importBtn').addEventListener('click', importPaste);
+  $('csvBtn').addEventListener('click', exportCSV);
+  $('listBtn').addEventListener('click', copySendList);
+  $('backupBtn').addEventListener('click', backup);
+  $('restoreBtn').addEventListener('click', function () { $('restoreFile').click(); });
+  $('restoreFile').addEventListener('change', function (e) {
+    if (e.target.files && e.target.files[0]) restore(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  $('plist').addEventListener('change', function (e) {
+    var item = e.target.closest('.pitem'); if (!item) return;
+    var p = data.people.filter(function (x) { return x.id === item.dataset.id; })[0]; if (!p) return;
+    var y = yr(p, year);
+    if (e.target.classList.contains('js-plan')) y.plan = e.target.value;
+    else if (e.target.classList.contains('js-recv')) {
+      y.received = e.target.checked;
+      if (e.target.checked) p.lastConfirmed = today();
+    } else if (e.target.classList.contains('js-ret')) y.returned = e.target.checked;
+    else return;
+    save(data); render();
+  });
+  $('plist').addEventListener('click', function (e) {
+    var item = e.target.closest('.pitem'); if (!item) return;
+    var p = data.people.filter(function (x) { return x.id === item.dataset.id; })[0]; if (!p) return;
+    if (e.target.classList.contains('js-edit')) fillForm(p);
+    else if (e.target.classList.contains('js-fresh')) { p.lastConfirmed = today(); save(data); render(); }
+    else if (e.target.classList.contains('js-del')) {
+      if (confirm(p.name + ' さんを削除します。\n過去の記録もまとめて消えます。よろしいですか?')) {
+        data.people = data.people.filter(function (x) { return x.id !== p.id; });
+        save(data); buildYears(); render();
+      }
+    }
+  });
+
+  buildYears();
+  $('fAll').classList.add('on');
+  clearForm();
+  render();
+
+  window.__nenga = {
+    get data() { return data; },
+    get year() { return year; },
+    set year(v) { year = v; buildYears(); render(); },
+    render: render, planOf: planOf, isStale: isStale, yr: yr, importPaste: importPaste, save: function () { save(data); }
+  };
+})();
+</script>
+</body>
+</html>
